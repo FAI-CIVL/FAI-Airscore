@@ -739,6 +739,7 @@ def task_admin(taskid: int):
             task.date = taskform.date.data
             task.task_type = taskform.task_type.data
             task.reg_id = taskform.region.data if taskform.region.data not in (0, '', None) else None
+            task.training = taskform.training.data
             if any(el.data is not None for el in (taskform.window_open_time, taskform.start_time)):
                 '''save timings only if set'''
                 task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data
@@ -788,6 +789,7 @@ def task_admin(taskid: int):
         taskform.date.data = task.date
         taskform.task_type.data = task.task_type
         taskform.region.data = task.reg_id or 0
+        taskform.training.data = task.training
         taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time((task.window_open_time
                                                                                            + offset) % 86400)
         taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time((task.window_close_time

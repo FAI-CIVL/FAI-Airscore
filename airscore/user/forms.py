@@ -309,6 +309,7 @@ class TaskForm(FlaskForm):
                             validators=[DataRequired()], default='race')
     region = SelectField('Region', id='select_region', choices=[(0, ' -')], default=0, coerce=int,
                          validators=[Optional()], description='Determines the Waypoint listed, and the airspace used')
+    training = BooleanField('Training', description='Training Task do not concur to Comp Results')
 
     # times
     window_open_time = TimeField('Window open', format='%H:%M', render_kw={"step": "300"},

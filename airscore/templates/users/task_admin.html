@@ -85,6 +85,7 @@ Task Settings
         <section class="tab-row row-wrap form">
             {{ render_field(taskform.task_type, readonly=readonly) }}
             {{ render_field(taskform.comment, size=40, disabled=locked) }}
+            {{ render_field(taskform.training, readonly=readonly) }}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="formula">
