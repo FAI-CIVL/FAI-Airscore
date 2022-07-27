@@ -161,6 +161,8 @@ class FSDB(object):
         """returns:
         - filename: STR
         - fsdb:     FSDB xml data, to be used in frontend."""
+        from frontendUtils import get_pretty_data
+        from compUtils import get_comp_json
 
         formula = self.comp.formula
         pilots = self.comp.participants
@@ -270,10 +272,12 @@ class FSDB(object):
 
         if not participants_fsdb:
             '''FsTasks'''
+            task_ids = dict()
             tasks = ET.SubElement(comp, 'FsTasks')
             for idx, t in enumerate(self.tasks):
                 task = ET.SubElement(tasks, 'FsTask')
                 task.set('id', str(idx + 1))
+                task_ids[idx+1] = t.task_code
                 task.set('name', t.task_name)
                 task.set('tracklog_folder', '')
 
@@ -282,6 +286,7 @@ class FSDB(object):
                 task_s = ET.SubElement(task, 'FsTaskState')
                 task_p = ET.SubElement(task, 'FsParticipants')
                 task_sp = ET.SubElement(task, 'FsTaskScoreParams')
+                # task_tr = ET.SubElement(task, 'FsTaskResults')
 
                 # tf = dict(t.formula.to_dict(), **t.stats)
 
@@ -541,6 +546,34 @@ class FSDB(object):
 
                         for k, v in r_attr.items():
                             pil_r.set(k, str(v))
+
+            '''FsCompetitionResults'''
+            compresults = ET.SubElement(comp, 'FsCompetitionResults')
+            result = get_pretty_data(get_comp_json(self.comp.comp_id))
+            rankings = result['rankings']
+            r = result['results']
+            for el in rankings:
+                rank_id = el['rank_id']
+                cr = ET.SubElement(compresults, 'FsCompetitionResult')
+                cr.set('id', str(el['rank_name']))
+                cr.set('title', str(el['rank_name']))
+                cr.set('top', 'all')  # ?
+                cr.set('tasks', ';'.join([str(i) for i in task_ids.keys()]))
+                cr.set('ts', '')
+                cr.set('task_result_pattern', '#0.0' if self.comp.formula.task_result_decimal == 1 else '#0')
+                cr.set('comp_result_pattern', '#0.0' if self.comp.formula.comp_result_decimal == 1 else '#0')
+                for p in [x for x in r if x['rankings'][rank_id]]:
+                    pr = ET.SubElement(cr, 'FsParticipant')
+                    pr.set('id', str(p['ID']))
+                    pr.set('points', p['score'].split('>')[1].split('<')[0])
+                    pr.set('rank', str(p['rankings'][rank_id]).split(' ')[0])
+                    res = list(p['results'].items())
+                    for x in res:
+                        pt = ET.SubElement(pr, 'FsTask')
+                        pt.set('id', str(next(k for k, v in task_ids.items() if v == x[0])))
+                        pt.set('points', x[1]['pre'])
+                        pt.set('counting_points', x[1]['score'])
+                        pt.set('counts', '1')
 
         '''creates the file to store'''
         fsdb = ET.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8')
