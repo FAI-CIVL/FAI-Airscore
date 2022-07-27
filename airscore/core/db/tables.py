@@ -267,6 +267,7 @@ class TaskObjectView(BaseModel):
         Column('task_name', String(100)),
         Column('task_num', TINYINT(4)),
         Column('reg_id', INTEGER(11)),
+        Column('training', TINYINT(1), server_default=text("'0'")),
         Column('region_name', String(40)),
         Column('window_open_time', MEDIUMINT(9)),
         Column('task_deadline', MEDIUMINT(9)),
@@ -716,6 +717,7 @@ class TblTask(BaseModel):
     task_name = Column(String(100))
     date = Column(Date, nullable=False)
     reg_id = Column(ForeignKey('tblRegion.reg_id'), index=True)
+    training = Column(TINYINT(1), server_default=text("'0'"))
     window_open_time = Column(MEDIUMINT(9))
     window_close_time = Column(MEDIUMINT(9))
     check_launch = Column(Enum('on', 'off'), server_default=text("'off'"))

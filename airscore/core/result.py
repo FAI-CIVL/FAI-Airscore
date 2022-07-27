@@ -41,6 +41,7 @@ class TaskResult:
         'date',
         'task_name',
         'task_num',
+        'training',
         'time_offset',
         'comment',
         'window_open_time',

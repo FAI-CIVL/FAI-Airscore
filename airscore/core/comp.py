@@ -395,6 +395,8 @@ class Comp(object):
         comp.get_rankings()
         for idx, t in enumerate(files):
             task = Task.create_from_json(task_id=t.task_id, filename=t.file)
+            if task.training:
+                continue
             comp.tasks.append(task)
             ''' task validity (if not using ftv, ftv_validity = day_quality)'''
             r = task.ftv_validity * 1000

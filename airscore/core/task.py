@@ -148,6 +148,7 @@ class Task(object):
         self.QNH = 1013.25  # Pressure Reference for altitude if altitude_mode = QNH
         self.comment = None
         self.time_offset = 0  # seconds
+        self.training = False
         self.cancelled = False
         self.locked = False
         self.task_path = None
