@@ -511,7 +511,7 @@ class ParticipantForm(FlaskForm):
                                              validators=[Optional(strip_whitespace=True)], default=None)
     sponsor = StringField('Sponsor', validators=[Optional(strip_whitespace=True), Length(max=100)], description=sp_desc)
     team = StringField('Team', validators=[Optional(strip_whitespace=True)], default=None)
-    nat_team = BooleanField('In National Team', default=1)
+    nat_team = BooleanField('In National Team', default=1, description='Concurring for Country scoring')
     live_id = IntegerField('Live ID', default=None,
                            validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=9999999)])
     xcontest_id = StringField('XContest ID', default=None, validators=[Optional(strip_whitespace=True)])

@@ -126,11 +126,11 @@ function remove_participant(par_id) {
 };
 
 function isNotEmpty( el ) {
-  return el != null && el != String.Empty
+  return el != null || el != String.Empty
 }
 
 function edit_participant(par_id) {
-  cleanup_modal('mod_modal')
+  cleanup_modal('mod_modal');
   let table = $('#pilots').DataTable();
   let row = '#id_'+par_id;
   let data = table.row( row ).data();
@@ -154,7 +154,7 @@ function edit_participant(par_id) {
   $('#mod_paid').val(paid);
   $('#modify_confirmed').attr("onclick","save_modified_participant('"+ par_id +"')");
 
-  $('#mod_nat_team').prop("checked", isNotEmpty(data['nat_team']) );
+  $('#nat_team').prop("checked", isNotEmpty(data['nat_team']) );
   $('#mod_team').val(data['team'])
   $('#mod_xcontest_id').val(data['xcontest_id'])
   $('#mod_live_id').val(data['live_id'])
@@ -162,6 +162,10 @@ function edit_participant(par_id) {
 
   $('#mod_modal').modal('show');
 }
+
+$('#nat_team').click(function(){
+  $('#nat_team').val($('#nat_team').is(':checked'));
+});
 
 $('#participant_form').submit( function(e) {
   e.preventDefault(); // block the traditional submission of the form.
@@ -203,7 +207,7 @@ $('#participant_form').submit( function(e) {
 
 function cleanup_modal (modal) {
   let body = modal + '-body';
-  let names = ['CIVL', 'name', 'birthdate', 'glider', 'sponsor', 'live_id', 'xcontest_id', 'team'];
+  let names = ['CIVL', 'name', 'birthdate', 'nat', 'glider', 'sponsor', 'live_id', 'xcontest_id', 'team', 'nat_team'];
   $('#'+modal+' .modal-errors').empty();  // delete all previous errors
   $('#'+body+' [name]').each( function( i, el ) {
     if ( names.includes($(el).attr('name')) ) $(el).val('');
