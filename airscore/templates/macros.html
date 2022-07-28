@@ -39,7 +39,7 @@
                 {% if field.choices is not undefined %}
                     {{ field(class="form-control form-control-sm%s" % extra_classes, **kwargs)|safe }}
                 {% else %}
-                    <span id="{{kwargs.get('id')}}" class="form-control form-control-sm{{extra_classes}}" readonly>{% if field.widget.input_type == 'checkbox' %}{{value is sameas true}} {% else %} {{ value }} {% endif %}</span>
+                    <span id="{{ id }}" class="form-control form-control-sm{{extra_classes}}" readonly>{% if field.widget.input_type == 'checkbox' %}{{value is sameas true}} {% else %} {{ value }} {% endif %}</span>
                 {% endif %}
             </div>
 
