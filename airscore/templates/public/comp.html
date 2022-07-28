@@ -46,7 +46,7 @@
       </div>
       <div class='col'>
         <h3 id='task_hd'>{{ task.task_name }}</h3>
-        <h5>{{ task.date }}</h5>
+        <h5>{{ task.date }} {% if task.training %}<span class = 'text-info'>(TRAINING DAY)</span>{% endif %}</h5>
         {% if task.status == 'CANCELLED' %}
         {%  set class = 'text-danger' %}
         {% elif task.status is in ['Not yet scored', 'Task not set'] %}

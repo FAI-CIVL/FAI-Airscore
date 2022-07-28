@@ -415,6 +415,7 @@ class CompResult(object):
         'task_code',
         'date',
         'status',
+        'training',
         'comment',
         'opt_dist',
         'pilots_goal',

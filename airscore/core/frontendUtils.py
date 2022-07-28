@@ -1328,7 +1328,8 @@ def get_comp_info(compid: int, task_ids=None):
 
     with db_session() as db:
         non_scored_tasks = (
-            db.query(t.task_id.label('id'), t.task_name, t.date, t.task_type, t.opt_dist, t.comment, t.cancelled)
+            db.query(t.task_id.label('id'),
+                     t.task_name, t.date, t.task_type, t.opt_dist, t.training, t.comment, t.cancelled)
             .filter_by(comp_id=compid)
             .order_by(t.date.desc())
             .all()

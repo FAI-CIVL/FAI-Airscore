@@ -67,6 +67,7 @@ function populate_comp_overall(json){
                     row.appendChild(th);
                 });
                 json.tasks.forEach(task => {
+                    if ( task.training == "1" ) return true;
                     let row = tbl.insertRow();
                     keys.forEach(el => {
                         let cell = row.insertCell();
