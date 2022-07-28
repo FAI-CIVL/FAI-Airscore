@@ -202,7 +202,7 @@ def make_map(
             p = (points[-1]['latitude'], points[-1]['longitude'])
             r = goal_line[4]
             col = '#3186cc'
-            angle = goal_line[5]
+            angle = goal_line[5] % 360
             semicircle.SemiCircle(p, r,
                                   direction=angle,
                                   arc=180,

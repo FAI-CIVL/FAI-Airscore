@@ -768,7 +768,7 @@ def get_line(turnpoints: list, optimised_turnpoints: list = None, tol: float = 0
                 # get goal area side
                 alat, alon = optimised_turnpoints[-2].lat, optimised_turnpoints[-2].lon
                 blat, blon = optimised_turnpoints[-1].lat, optimised_turnpoints[-1].lon
-                opt_bearing = calcBearing(alat, alon, blat, blon)
+                opt_bearing = calcBearing(alat, alon, blat, blon) % 360
                 if abs(opt_bearing - az2) > 90:
                     az1, az2 = az2, az1
             lon3, lat3, az = g.fwd(clon, clat, az1, t)
