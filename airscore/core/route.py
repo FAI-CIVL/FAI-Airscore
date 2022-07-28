@@ -762,6 +762,7 @@ def get_line(turnpoints: list, optimised_turnpoints: list = None, tol: float = 0
         if not (tp.lat == clat and tp.lon == clon):
             flon, flat = tp.lon, tp.lat
             az1, az2, d = g.inv(clon, clat, flon, flat)
+            az1, az2 = az1 % 360, az2 % 360
             lon1, lat1, az = g.fwd(clon, clat, az1 - 90, ln)
             lon2, lat2, az = g.fwd(clon, clat, az1 + 90, ln)
             if optimised_turnpoints:
