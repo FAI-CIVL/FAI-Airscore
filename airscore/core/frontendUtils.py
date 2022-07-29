@@ -1990,6 +1990,27 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
     }
 
 
+def get_comp_json_zip(comp_id: int):
+    from db.tables import TblResultFile as R
+    from Defines import RESULTDIR, TEMPFILES
+    from zipfile import ZipFile
+
+    results = R.get_all(comp_id=comp_id, active=1)
+    zipfile = Path(TEMPFILES, f"json_files_{comp_id}.zip")
+    if zipfile.is_file():
+        zipfile.unlink(missing_ok=True)
+
+    zipObj = ZipFile(zipfile, 'w')
+
+    for f in results:
+        file = Path(RESULTDIR, f.filename)
+        if file.is_file():
+            zipObj.write(file, file.name)
+
+    zipObj.close()
+    return zipfile
+
+
 def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> tuple:
     from mapUtils import create_airspace_layer, create_waypoints_layer
     from db.tables import TblRegion as R

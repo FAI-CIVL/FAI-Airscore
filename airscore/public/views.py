@@ -26,7 +26,6 @@ from flask_wtf import FlaskForm
 from wtforms import SelectField
 import mapUtils
 import Defines
-from os import path
 import frontendUtils
 from pathlib import Path
 
@@ -737,19 +736,23 @@ def multimap(trackid: int, extra_trackids):
 def download_file(filetype: str, filename):
     if filetype == 'waypoints':
         waypoints_path = Defines.WAYPOINTDIR
-        file = path.join(waypoints_path, filename)
+        file = Path(waypoints_path, filename)
         mimetype = "text/plain"
     elif filetype == 'airspace':
         airspace_path = Defines.AIRSPACEDIR
-        file = path.join(airspace_path, filename)
+        file = Path(airspace_path, filename)
         mimetype = "text/plain"
     elif filetype == 'igc_zip':
         task_id = int(filename)
         file = frontendUtils.get_task_igc_zip(task_id)
         mimetype = "application/zip"
     elif filetype == 'file':
-        file = path.join(Defines.EXAMPLEFILEDIR, filename)
+        file = Path(Defines.EXAMPLEFILEDIR, filename)
         mimetype = "application/octet-stream"
+    elif filetype == 'json':
+        comp_id = int(filename)
+        file = frontendUtils.get_comp_json_zip(comp_id)
+        mimetype = "application/zip"
     else:
         file = None
         mimetype = "text/plain"
