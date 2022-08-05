@@ -81,6 +81,7 @@ class FlightResult(Participant):
         self.waypoints_achieved = []
         self.fixed_LC = fixed_LC
         self.lead_coeff = lead_coeff
+        self.best_dist_to_ESS = 0
         self.distance_flown = distance_flown  # max distance flown calculated along task route
         self.best_distance_time = 0  # rawtime of fix that gave max distance flown
         self.stopped_distance = 0  # distance at fix that achieve best total distance in stopped tasks

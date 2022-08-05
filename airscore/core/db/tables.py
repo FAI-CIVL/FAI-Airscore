@@ -164,6 +164,7 @@ class FlightResultView(BaseModel):
         Column('team', String(100)),
         Column('nat_team', TINYINT(4), server_default=text("'1'")),
         Column('live_id', String(10)),
+        Column('best_dist_to_ESS', FLOAT),
         Column('distance_flown', FLOAT),
         Column('best_distance_time', MEDIUMINT(9), nullable=False, server_default=text("'0'")),
         Column('stopped_distance', FLOAT),
@@ -772,6 +773,7 @@ class TblTaskResult(BaseModel):
     last_update = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
     track_file = Column(String(255))
     g_record = Column(TINYINT(4), server_default=text("'1'"))
+    best_dist_to_ESS = Column(FLOAT)
     distance_flown = Column(FLOAT)
     best_distance_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     stopped_distance = Column(FLOAT)
@@ -830,6 +832,7 @@ class TblTaskResult(BaseModel):
                     p.team,
                     p.nat_team,
                     p.live_id,
+                    cls.best_dist_to_ESS,
                     cls.distance_flown,
                     cls.best_distance_time,
                     cls.stopped_distance,
