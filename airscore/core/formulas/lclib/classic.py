@@ -37,7 +37,7 @@ def tot_lc_calculation(res, t):
         else:
             max_time = t.max_time
 
-        best_dist_to_ess = (t.opt_dist_to_ESS - res.distance) / 1000  # in Km
+        best_dist_to_ess = max(0, res.best_dist_to_ESS / 1000)   # in Km
         task_time = max_time - res.real_start_time
         landed_out = lead_coeff_area(task_time, best_dist_to_ess, ss_distance)
 

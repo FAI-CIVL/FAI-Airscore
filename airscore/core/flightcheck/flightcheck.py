@@ -352,6 +352,10 @@ def calculate_final_results(
             if tp.made_all:
                 evaluate_goal(result, task)
 
+        else:
+            '''save optimised best_dist_to_ESS for LC calculation'''
+            result.best_dist_to_ESS = lead_coeff.best_dist_to_ess_m
+
     if result.result_type != 'goal':
         print(f"Pilot landed after {result.distance_flown / 1000:.2f}km")
 

@@ -21,12 +21,17 @@ class LeadCoeff(object):
         self.comp_class = task.comp_class
         self.summing = 0.0
 
+    @property
+    def best_dist_to_ess_m(self):
+        return self.best_dist_to_ess[-1] * 1000
+
     def reset(self):
         self.summing = 0.0
 
-    def update(self, result, fix, next_fix, dist_to_ESS):
+    def update(self, result, fix, next_fix, dist_to_ess):
         """ Get lead coeff calculation formula from Formula Library"""
-        self.best_dist_to_ess.append(min(dist_to_ESS/1000, self.ss_distance, self.best_dist_to_ess[0]))
+        dist_to_ess /= 1000
+        self.best_dist_to_ess.append(min(dist_to_ess, self.ss_distance, self.best_dist_to_ess[0]))
         self.best_distance_time = result.best_distance_time if not result.ESS_time else result.ESS_time
         self.summing += self.lib.lead_coeff_function(self, result, fix, next_fix)
         self.best_dist_to_ess.pop(0)

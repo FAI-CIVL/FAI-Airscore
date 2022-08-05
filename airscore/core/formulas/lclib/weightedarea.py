@@ -1,5 +1,5 @@
 
-def lc_calculation(lc, result, fix, next_fix):
+def lc_calculation(lc, result, fix, next_fix) -> float:
     """ Lead Coefficient formula from GAP2020
         11.3.1 Leading coefficient
         Each started pilot’s track log is used to calculate the leading coefficient (LC),
@@ -17,13 +17,13 @@ def lc_calculation(lc, result, fix, next_fix):
     # print(f'weight: {weight}, progress: {progress}, time: {time}')
     if progress <= 0:
         return 0
-    else:
-        time = next_fix.rawtime - lc.best_start_time
-        weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
-        return 0 if weight == 0 else weight * progress * time
+
+    time = next_fix.rawtime - lc.best_start_time
+    weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
+    return 0 if weight == 0 else weight * progress * time
 
 
-def tot_lc_calculation(res, t):
+def tot_lc_calculation(res, t) -> float:
     """Function to calculate final Leading Coefficient for pilots,
     that needs to be done when all tracks have been scored"""
     # print(f'Weighted Area Tot LC Calculation')
@@ -36,27 +36,27 @@ def tot_lc_calculation(res, t):
         landed_out = 0
     else:
         '''pilot did not make ESS'''
-        best_dist_to_ess = max(t.opt_dist_to_ESS - res.distance_flown, 0) / 1000  # in Km
+        best_dist_to_ess = max(0, res.best_dist_to_ESS / 1000)  # in Km
         missing_time = t.max_time - t.start_time
         landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
     return (res.fixed_LC + landed_out) / (1800 * ss_distance)
 
 
-def missing_area(time_interval, best_distance_to_ESS, ss_distance):
+def missing_area(time_interval: float, best_distance_to_ESS: float, ss_distance: float) -> float:
     """calculates medium weight for missing portion, missing area using mean weight value"""
     p = best_distance_to_ESS / ss_distance
     return weightFalling(p) * time_interval * best_distance_to_ESS
 
 
-def weightRising(p):
+def weightRising(p: float) -> float:
     return (1 - 10 ** (9 * p - 9)) ** 5
 
 
-def weightFalling(p):
+def weightFalling(p: float) -> float:
     return (1 - 10 ** (-3 * p)) ** 2
 
 
-def weight_calc(dist_to_ess, ss_distance):
+def weight_calc(dist_to_ess: float, ss_distance: float) -> float:
     p = dist_to_ess / ss_distance
     return weightRising(p) * weightFalling(p)
 
