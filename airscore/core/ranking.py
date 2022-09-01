@@ -172,7 +172,7 @@ def create_rankings(comp_id: int, comp_class: str = None) -> list:
             rank['min_date'] = el.min_date
             rank['max_date'] = el.max_date
         elif el.rank_type == 'female':
-            rank['min_num'] = int(el.rank_value)
+            rank['min_num'] = int(el.rank_value or 0)
         elif el.rank_type == 'custom':
             rank['attr_id'] = el.attr_id
             rank['rank_value'] = el.rank_value
