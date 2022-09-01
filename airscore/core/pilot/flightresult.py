@@ -430,10 +430,10 @@ class FlightResult(Participant):
         '''flight origin'''
         self.first_time = flight.fixes[0].rawtime if not hasattr(flight, 'takeoff_fix') else flight.takeoff_fix.rawtime
         '''flight end'''
-        self.landing_time = flight.landing_fix.rawtime
-        self.landing_altitude = (
-            flight.landing_fix.gnss_alt if alt_source == 'GPS' else flight.landing_fix.press_alt + alt_compensation
-        )
+        if hasattr(flight, 'landing_fix'):
+            self.landing_time = flight.landing_fix.rawtime
+            self.landing_altitude = (flight.landing_fix.gnss_alt if alt_source == 'GPS'
+                                     else flight.landing_fix.press_alt + alt_compensation)
 
         '''Turnpoint managing'''
         tp = FlightPointer(task)

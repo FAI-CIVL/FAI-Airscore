@@ -973,4 +973,4 @@ def has_landing_fix(track: Path) -> bool:
     from pilot.track import Track
     f = Track.create_from_file(track, config)
 
-    return bool(f.landing_fix and not f.landing_fix == f.fixes[-1])
+    return bool(hasattr(f, 'landing_fix') and f.landing_fix and not f.landing_fix == f.fixes[-1])
