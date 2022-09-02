@@ -110,7 +110,7 @@ def check_fixes(
                 if evaluate_landed(result, next_fix, config=igc_parsing_config):
                     print(f"{result.name}: SEEMS LANDED {next_fix}")
                     '''checking track'''
-                    landing_fix = get_landing_fix(Path(task.file_path, result.track_file))
+                    landing_fix = get_landing_fix(Path(task.file_path, result.track_file), config=igc_parsing_config)
                     if landing_fix:
                         '''cope with top landing and restart'''
                         if not tp.start_done and next_fix.distance_to(tp.launch) < 1:  # kilometers from launch
@@ -518,7 +518,7 @@ def evaluate_landed(p: LiveResult, fix: LiveFix, config: FlightParsingConfig) ->
     return False
 
 
-def get_landing_fix(track: Path, config: FlightParsingConfig = None):
+def get_landing_fix(track: Path, config: FlightParsingConfig):
     from pilot.track import Track
     f = Track.create_from_file(track, config)
     if hasattr(f, 'landing_fix') and f.landing_fix and not f.landing_fix == f.fixes[-1]:

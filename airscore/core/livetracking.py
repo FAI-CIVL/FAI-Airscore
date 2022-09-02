@@ -910,7 +910,7 @@ def save_livetrack_result(p: LiveResult, task: LiveTask, airspace: AirspaceCheck
     from pilot.track import Track
     from pilot.flightresult import save_track
 
-    flight = Track.process(Path(task.file_path, p.track_file), task)
+    flight = Track.process(Path(task.file_path, p.track_file), task, config=config)
     if flight and flight.valid:
         print(f"flight valid. Livetracking LC: {p.fixed_LC} distance: {p.distance_flown} time: {p.ss_time}")
         p.check_flight(flight, task, airspace)
@@ -969,8 +969,8 @@ def possibly_landed(fixes: list) -> bool:
     return False
 
 
-def has_landing_fix(track: Path) -> bool:
-    from pilot.track import Track
-    f = Track.create_from_file(track, config)
-
-    return bool(hasattr(f, 'landing_fix') and f.landing_fix and not f.landing_fix == f.fixes[-1])
+# def has_landing_fix(track: Path) -> bool:
+#     from pilot.track import Track
+#     f = Track.create_from_file(track, config)
+#
+#     return bool(hasattr(f, 'landing_fix') and f.landing_fix and not f.landing_fix == f.fixes[-1])
