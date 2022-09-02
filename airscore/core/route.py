@@ -438,6 +438,8 @@ def start_made_civl(fix, next, start, tolerance, min_tol_m):
     FS considers that a exit start.
     We prefer to use XCTrack approach.
     This version DOES USE a Entry/Exit flag (start only)
+
+    Since CIVL Gap Rules 2021 6.2.1 Start cylinder is evaluated as any other turnpoint, so this code is not in use
     """
 
     if start.how == "entry":

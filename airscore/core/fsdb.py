@@ -555,7 +555,7 @@ class FSDB(object):
             for el in rankings:
                 rank_id = el['rank_id']
                 cr = ET.SubElement(compresults, 'FsCompetitionResult')
-                cr.set('id', str(el['rank_name']))
+                cr.set('id', str(el['rank_name']).lower())
                 cr.set('title', str(el['rank_name']))
                 cr.set('top', 'all')  # ?
                 cr.set('tasks', ';'.join([str(i) for i in task_ids.keys()]))

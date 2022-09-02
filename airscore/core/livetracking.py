@@ -967,10 +967,3 @@ def possibly_landed(fixes: list) -> bool:
                     valid = 0
                     start = 0
     return False
-
-
-# def has_landing_fix(track: Path) -> bool:
-#     from pilot.track import Track
-#     f = Track.create_from_file(track, config)
-#
-#     return bool(hasattr(f, 'landing_fix') and f.landing_fix and not f.landing_fix == f.fixes[-1])
