@@ -30,6 +30,7 @@ from pilot.notification import Notification
 from pilot.waypointachieved import WaypointAchieved
 from trackUtils import create_igc_filename, igc_parsing_config_from_yaml
 from pilot.track import GNSSFix
+from calcUtils import igc_coords, sec_to_time, sec_to_string, epoch_to_string
 from task import Task
 
 '''parameters for livetracking'''
@@ -156,9 +157,10 @@ class LiveTracking(object):
 
         self.task = task  # LiveTask object
         self.airspace = airspace  # AirspaceCheck object
-        self.test = test  # bool, test mode, using stored informations about events in the past
+        self.test = test  # bool, test mode, using stored information about events in the past
         self.init_timestamp = init_timestamp  # real unix time livetracking has started
         self.result = {}  # result string
+        self.offset = 0  # offset to use for recovering LT time if started late
 
     @property
     def timestamp(self):
@@ -247,7 +249,7 @@ class LiveTracking(object):
 
     @property
     def now(self):
-        return self.timestamp - self.test_offset
+        return self.timestamp - self.test_offset if self.test else self.timestamp - self.offset
 
     @property
     def status(self):
@@ -275,15 +277,14 @@ class LiveTracking(object):
     def finished(self):
         return (
             self.task.cancelled
-            or self.task.stopped_time
-            or self.now > self.ending_timestamp + config.time_after_deadline
+            # or self.task.stopped_time and self.now > self.task.start_time + config.time_after_deadline
+            or self.now > self.ending_timestamp + config.time_after_deadline  # should cover Stopped Task as well
             or (self.properly_set and self.now > self.start_timestamp and len(self.flying_pilots) == 0)
-            or (self.now > self.closing_timestamp and all(el.first_time in (0, None) for el in self.flying_pilots))
+            # or (self.now > self.closing_timestamp and all(el.first_time in (0, None) for el in self.flying_pilots))
         )
 
     @property
     def headers(self):
-        from calcUtils import sec_to_string
 
         main = ''
         details = ''
@@ -308,6 +309,12 @@ class LiveTracking(object):
                 stopped = sec_to_string(self.task.stopped_time, self.task.time_offset, seconds=False)
                 warning = f'Task has been stopped at {stopped} (Local Time).'
             elif self.finished:
+                print(f'--- LT finished ---')
+                print(f'cancelled: {self.task.cancelled}, stopped: {self.task.stopped_time}, already ended: {self.now > self.ending_timestamp + config.time_after_deadline}')
+                print(f'finished: {self.finished}, now: {self.now} ({epoch_to_string(self.now, self.task.time_offset)}, start: {self.start_timestamp} ({epoch_to_string(self.start_timestamp, self.task.time_offset)}), end: {self.ending_timestamp} ({epoch_to_string(self.ending_timestamp, self.task.time_offset)})')
+                print(f'properly_set: {self.properly_set}, flying: {len(self.flying_pilots)}')
+                print(f'condition nobody is flying: {self.properly_set and self.now > self.start_timestamp and len(self.flying_pilots) == 0}')
+                print(f'condition nobody will fly: {self.now > self.closing_timestamp and all(el.first_time in (0, None) for el in self.flying_pilots)}')
                 warning = f'Livetracking is terminated. Provisional Results will be available shortly.'
         return dict(main=main, warning=warning, details=details)
 
@@ -456,6 +463,7 @@ class LiveTracking(object):
 
         Logger('ON', 'livetracking.txt')
         '''for testing'''
+        print(f' -- LT CREATE --')
         print(f'Window open: {datetime.fromtimestamp(self.opening_timestamp).isoformat()}')
         print(f'Deadline: {datetime.fromtimestamp(self.ending_timestamp).isoformat()}')
         print(f'Livetrack Starting: {datetime.fromtimestamp(self.timestamp).isoformat()}')
@@ -469,9 +477,29 @@ class LiveTracking(object):
             # p.saved_to_db = False
             p.suspect_landing_fix = None
         print(f'IGC File created')
+
         '''create Results JSON file'''
         self.create_result()
+
+        '''recover the gap if LT started after task opening'''
+        interval = 180
+        if self.opening_timestamp < self.now - interval < self.ending_timestamp + 7200:
+            print(f"LT started after task opening by {self.now - self.opening_timestamp} seconds: recovering the gap")
+            self.offset = self.now - self.opening_timestamp - interval
+            print(f"Time starting recovering: {epoch_to_string(self.now, self.task.time_offset)}")  # Local Time
+            while True:
+                self.run(interval=interval)
+                max_time = max(el.last_time or 0 for el in self.flying_pilots)
+                max_time_epoch = max_time + self.unix_date
+                if max_time_epoch + interval > self.now + self.offset or self.offset <= 0:
+                    self.offset = 0
+                    print(f"Recovered the gap. Starting normal LT mode")
+                    break
+                print(f"reducing offset")
+                self.offset -= interval
+
         print(f'Livetracking JSON File created')
+        print(f' -- LT CREATE END --')
         Logger('OFF')
 
     @staticmethod
@@ -491,7 +519,6 @@ class LiveTracking(object):
     @staticmethod
     def run_test(task_id: int):
         import requests
-        from calcUtils import epoch_to_string
         from result import open_json_file
 
         file = Path(LIVETRACKDIR, f'{task_id}_test.txt')
@@ -543,16 +570,16 @@ class LiveTracking(object):
         if self.properly_set:
             Logger('ON', 'livetracking.txt')
             self.update_result_status()
-            p = self.pilots[0]
             print(f"RUN, from read")
-            print(f"{p.name}: first {p.first_time}, last {p.last_time}, {p.landing_time}")
+            print(f"Flying pilots: {len(self.flying_pilots)}")
             for p in self.flying_pilots:
                 d = next(el for el in self.result['data'] if el['par_id'] == p.par_id)
                 p.update_from_result(d)
                 print(f"RUN, from json")
-                print(f"{p.name}: first {p.first_time}, last {p.last_time}, {p.landing_time}")
+                print(f"{p.name} (live {p.live_id}: first {p.first_time}, last (next live request time) {p.last_time}, landing {p.landing_time}")
 
             cycle_starting_time = self.now
+            print(f"cycle starting time: {epoch_to_string(self.now, self.task.time_offset)}")  # Local Time
             response = get_livetracks(self.task, self.flying_pilots, cycle_starting_time, interval)
             if not response:
                 print(f'{self.now}: -- NO RESPONSE or NO NEW FIXES ...')
@@ -778,7 +805,6 @@ def update_livetrack_file(result: LiveResult, flight: list, path: str):
     """IGC Fix Format:
     B1132494613837N01248410EA0006900991
     """
-    from calcUtils import igc_coords, sec_to_time
 
     file = Path(path, result.track_file)
     if file.is_file():
