@@ -397,7 +397,7 @@ class FSDB(object):
                     'no_of_pilots_landed_before_stop': 0 if not t.stopped_time else t.pilots_landed,
                     'sum_dist_over_min': km(t.tot_dist_over_min),
                     'sum_real_dist_over_min': km(t.tot_dist_over_min),  # not yet implemented
-                    'best_real_dist': km(t.max_distance),  # not yet implemented
+                    'best_real_dist': km(t.max_distance_flown),
                     'last_start_time': get_isotime(
                         t.date, max([x.SSS_time for x in t.valid_results if x.SSS_time is not None]), t.time_offset
                     ),
