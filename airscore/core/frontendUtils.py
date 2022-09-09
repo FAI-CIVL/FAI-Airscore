@@ -2266,7 +2266,7 @@ def check_zip_file(file: Path, extensions: list = None) -> tuple:
     if zipfile.testzip():
         return False, 'Zip file is corrupt.'
     elements = zipfile.namelist()
-    if not elements or extensions and not any(el for el in elements if Path(el).suffix[1:] in extensions):
+    if not elements or extensions and not any(el for el in elements if Path(el).suffix[1:].lower() in extensions):
         return False, f'Zip file is empty or does not contain any file with extension: {", ".join(extensions)}.'
     return True, 'success'
 
