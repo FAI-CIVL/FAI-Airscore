@@ -134,10 +134,7 @@ class Track(Flight):
         Returns:
             An instance of Flight built from the supplied IGC file.
         """
-        # if not config_class:
-        #     config = FlightParsingConfig()
-        # else:
-        #     config = config_class
+
         fixes = []
         a_records = []
         i_records = []
@@ -166,8 +163,7 @@ class Track(Flight):
                 else:
                     # Do not parse any other types of IGC records
                     pass
-        flight = Flight(fixes, a_records, h_records, i_records, config)
-        return flight
+        return Track(fixes, a_records, h_records, i_records, config)
 
     @staticmethod
     def process(
@@ -221,7 +217,7 @@ class Track(Flight):
                     # Do not parse any other types of IGC records
                     pass
         try:
-            return Flight(fixes, a_records, h_records, i_records, config)
+            return Track(fixes, a_records, h_records, i_records, config)
         except IndexError:
             return None
         # return flight
