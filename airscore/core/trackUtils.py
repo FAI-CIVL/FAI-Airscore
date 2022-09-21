@@ -444,8 +444,9 @@ def import_igc_file(file, task, parsing_config, check_g_record=False) -> Track o
                  'text': f"Track is not a valid track file, pilot not found in competition "
                          f"or pilot already has a track"})
     elif not flight.valid:
+        code = 'track_fail' if any('out of smallint range' in el for el in flight.notes) else 'valid_fail'
         return (False,
-                {'code': 'valid_fail',
+                {'code': code,
                  'text': f"IGC does not meet quality standard set by igc parsing config. "
                          f"Notes: {'; '.join(flight.notes)}"})
 

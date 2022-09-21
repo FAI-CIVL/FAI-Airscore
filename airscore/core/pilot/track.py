@@ -19,6 +19,110 @@ from task import Task
 
 class Track(Flight):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _check_altitudes(self):
+        press_alt_violations_num = 0
+        gnss_alt_violations_num = 0
+        press_huge_changes_num = 0
+        gnss_huge_changes_num = 0
+        press_chgs_sum = 0.0
+        gnss_chgs_sum = 0.0
+        smallint_range = 30000
+        press_out_of_range = False
+        gnss_out_of_range = False
+        for i in range(len(self.fixes) - 1):
+            press_alt_delta = math.fabs(
+                self.fixes[i+1].press_alt - self.fixes[i].press_alt)
+            gnss_alt_delta = math.fabs(
+                self.fixes[i+1].gnss_alt - self.fixes[i].gnss_alt)
+            rawtime_delta = math.fabs(
+                self.fixes[i+1].rawtime - self.fixes[i].rawtime)
+            if rawtime_delta > 0.5:
+                if (press_alt_delta / rawtime_delta >
+                        self._config.max_alt_change_rate):
+                    press_huge_changes_num += 1
+                else:
+                    press_chgs_sum += press_alt_delta
+                if (gnss_alt_delta / rawtime_delta >
+                        self._config.max_alt_change_rate):
+                    gnss_huge_changes_num += 1
+                else:
+                    gnss_chgs_sum += gnss_alt_delta
+            if abs(self.fixes[i].press_alt) > smallint_range:
+                press_out_of_range = True
+                press_alt_violations_num += 1
+            elif (self.fixes[i].press_alt > self._config.max_alt
+                    or self.fixes[i].press_alt < self._config.min_alt):
+                press_alt_violations_num += 1
+            if abs(self.fixes[i].gnss_alt) > smallint_range:
+                gnss_out_of_range = True
+                gnss_alt_violations_num += 1
+            elif (self.fixes[i].gnss_alt > self._config.max_alt or
+                    self.fixes[i].gnss_alt < self._config.min_alt):
+                gnss_alt_violations_num += 1
+
+        press_chgs_avg = press_chgs_sum / float(len(self.fixes) - 1)
+        gnss_chgs_avg = gnss_chgs_sum / float(len(self.fixes) - 1)
+
+        press_alt_ok = True
+        if press_out_of_range:
+            self.notes.append(
+                "Error: pressure altitude is out of smallint range")
+            press_alt_ok = False
+
+        if press_chgs_avg < self._config.min_avg_abs_alt_change:
+            self.notes.append(
+                "Warning: average pressure altitude change between fixes "
+                "is: %f. It is lower than the minimum: %f."
+                % (press_chgs_avg, self._config.min_avg_abs_alt_change))
+            press_alt_ok = False
+
+        if press_huge_changes_num > self._config.max_alt_change_violations:
+            self.notes.append(
+                "Warning: too many high changes in pressure altitude: %d. "
+                "Maximum allowed: %d."
+                % (press_huge_changes_num,
+                   self._config.max_alt_change_violations))
+            press_alt_ok = False
+
+        if press_alt_violations_num > 0:
+            self.notes.append(
+                "Warning: pressure altitude limits exceeded in %d fixes."
+                % (press_alt_violations_num))
+            press_alt_ok = False
+
+        gnss_alt_ok = True
+        if gnss_out_of_range:
+            self.notes.append(
+                "Error: gnss altitude is out of smallint range")
+            gnss_alt_ok = False
+
+        if gnss_chgs_avg < self._config.min_avg_abs_alt_change:
+            self.notes.append(
+                "Warning: average gnss altitude change between fixes is: %f. "
+                "It is lower than the minimum: %f."
+                % (gnss_chgs_avg, self._config.min_avg_abs_alt_change))
+            gnss_alt_ok = False
+
+        if gnss_huge_changes_num > self._config.max_alt_change_violations:
+            self.notes.append(
+                "Warning: too many high changes in gnss altitude: %d. "
+                "Maximum allowed: %d."
+                % (gnss_huge_changes_num,
+                   self._config.max_alt_change_violations))
+            gnss_alt_ok = False
+
+        if gnss_alt_violations_num > 0:
+            self.notes.append(
+                "Warning: gnss altitude limits exceeded in %d fixes." %
+                gnss_alt_violations_num)
+            gnss_alt_ok = False
+
+        self.press_alt_valid = press_alt_ok
+        self.gnss_alt_valid = gnss_alt_ok
+
     @staticmethod
     def create_from_file(filename: Path, config: FlightParsingConfig = FlightParsingConfig()):
         """Creates an instance of Flight from a given file.

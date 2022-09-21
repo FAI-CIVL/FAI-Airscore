@@ -24,7 +24,7 @@ function populate_track_admin(task_id) {
           if ( task_info.cancelled || task_info.locked ) {
             return '<span class="btn btn-info">locked<span>';
           }
-          else if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0){
+          else if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0 | data['Result'].includes('Track is not acceptable')){
             let buttons;
             buttons =
              '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-1 mb-1" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
@@ -556,6 +556,21 @@ $(document).ready(function(){
         data.message.Result = '<button id="TrackUp_noV' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', false, true);">Upload IGC ignoring quality check & G record</button>';
         update_row(data.message);
         toastr.warning(data.message.text, 'Track not Valid', {timeOut: 5000});
+      }, false);
+
+      es.addEventListener('track_fail', function(event) {
+        let data = JSON.parse(event.data);
+        data.message = JSON.parse(data.message);
+        $('#ABS'+ data.id).show();
+        $('#MD'+ data.id).show();
+        $('#DNF'+ data.id).show();
+        $('#TrackUp'+ data.id).show();
+        $('#upload_box'+ data.id).show();
+        $('#filediv'+ data.id).hide();
+        $('#progress'+ data.id).hide();
+        data.message.Result = '<button id="TrackUp_noT' + data.id  +'" class="btnupload btn btn-danger mt-3">Track is not acceptable: values out of range</button>';
+        update_row(data.message);
+        toastr.error(data.message.text, 'Track not Valid', {timeOut: 5000});
       }, false);
 
       es.addEventListener('g_record_fail', function(event) {
