@@ -109,7 +109,7 @@ def stopped_validity(task):
 
     avgdist = task.tot_dist_flown / task.pilots_launched / 1000  # avg distance in Km
     distlaunchtoess = task.opt_dist_to_ESS / 1000  # TaskDistToESS in Km
-    max_distance = task.max_distance / 1000  # bestDistFlown in Km
+    max_distance = task.max_distance_flown / 1000  # bestDistFlown in Km
     std_dev = task.std_dev_dist / 1000  # stDevDistFlown in Km
 
     stopv = min(
