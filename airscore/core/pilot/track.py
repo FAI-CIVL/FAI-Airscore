@@ -218,7 +218,8 @@ class Track(Flight):
                     pass
         try:
             return Track(fixes, a_records, h_records, i_records, config)
-        except IndexError:
+        except (IndexError, AttributeError) as e:
+            print(f"Error creating Track from {filename.name}: {e}")
             return None
         # return flight
 
