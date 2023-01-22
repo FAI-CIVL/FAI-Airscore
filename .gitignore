@@ -213,3 +213,4 @@ docker-compose-server*.*
 /temp_tracks/*
 /temp/
 /temp/*
+/.ssh/
