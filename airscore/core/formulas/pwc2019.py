@@ -126,12 +126,12 @@ def points_weight(task):
 
     '''Stopped Task'''
     if task.stopped_time and task.pilots_ess:
-        """12.3.5
+        '''12.3.5
         A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
         This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
         the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
         had just reached ESS at task stop time.
-        """
+        '''
         task.time_points_reduction = calculate_time_points_reduction(task)
         task.avail_dist_points += task.time_points_reduction
     else:
@@ -144,10 +144,8 @@ def lead_coeff_function(lc, result, fix, next_fix):
     11.3.1 Leading coefficient
     PG: weighted area calculation
     """
-    if lc.comp_class == 'HG':
-        return lclib.classic.lc_calculation(lc, result, fix, next_fix)
-    else:
-        return lclib.weightedarea.lc_calculation(lc, result, fix, next_fix)
+
+    return lclib.weightedarea.lc_calculation(lc, result, fix, next_fix)
 
 
 def tot_lc_calc(res, t):
@@ -155,8 +153,5 @@ def tot_lc_calc(res, t):
     that needs to be done when all tracks have been scored
     PG: weighted area calculation
     """
-    if t.comp_class == 'HG':
-        return lclib.classic.tot_lc_calculation(res, t)
-    else:
-        return lclib.weightedarea.tot_lc_calculation(res, t)
 
+    return lclib.weightedarea.tot_lc_calculation(res, t)

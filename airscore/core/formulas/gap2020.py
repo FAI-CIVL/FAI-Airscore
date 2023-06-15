@@ -306,6 +306,9 @@ def pilot_speed(task, res):
         Tmin = task.fastest_in_goal / 3600 or 0
 
     Ptime = res.ss_time / 3600  # decimal hours
+    if Ptime < Tmin:
+        # in fastest_in_goal condition, pilot was faster than first in goal, if not checked it will cause exception
+        return 0
     SF = max(0, 1 - ((Ptime - Tmin) / sqrt(Tmin)) ** (5 / 6))
     Pspeed = Aspeed * SF - task.time_points_reduction if SF > 0 else 0
 
