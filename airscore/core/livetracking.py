@@ -41,6 +41,9 @@ config.time_after_deadline = 180  # (sec) time after deadline at which livetrack
 config.min_distance = 100  # meters max distance from launch not to be considered airborne if fast enough
 config.min_alt_difference = 50  # meters min altitude difference not to be considered landed
 
+'''number of fixes to get from server'''
+default_interval = 180  # seconds
+
 
 class LiveFix(GNSSFix):
     """GNSSFix from igc_lib, a little easier to initialise, adding alt attribute as gps alt if not specified"""
@@ -482,21 +485,21 @@ class LiveTracking(object):
         self.create_result()
 
         '''recover the gap if LT started after task opening'''
-        interval = 180
-        if self.opening_timestamp < self.now - interval < self.ending_timestamp:
+        if self.opening_timestamp < self.now - default_interval < self.ending_timestamp:
             print(f"LT started after task opening by {self.now - self.opening_timestamp} seconds: recovering the gap")
-            self.offset = self.now - self.opening_timestamp - interval
+            self.offset = self.now - self.opening_timestamp
             print(f"Time starting recovering: {epoch_to_string(self.now, self.task.time_offset)}")  # Local Time
             while True:
-                self.run(interval=interval)
+                self.run(interval=default_interval)
                 max_time = max(el.last_time or 0 for el in self.flying_pilots)
                 max_time_epoch = max_time + self.unix_date
-                if max_time_epoch + interval > self.now + self.offset or self.offset <= 0:
+                # if max_time_epoch > self.now + self.offset or self.offset <= 0:
+                if self.offset + default_interval <= 0:  # strange I need to add this to get to real time
                     self.offset = 0
                     print(f"Recovered the gap. Starting normal LT mode")
                     break
                 print(f"reducing offset")
-                self.offset -= interval
+                self.offset -= default_interval
 
         print(f'Livetracking JSON File created')
         print(f' -- LT CREATE END --')
@@ -548,7 +551,7 @@ class LiveTracking(object):
         else:
             return None
 
-    def run(self, interval: int = 60):
+    def run(self, interval: int = default_interval):
         """Incremental background job.
             - reads livetracking json file
             - creates LieTracking Object
@@ -619,7 +622,7 @@ class LiveTracking(object):
             save_livetrack_result(p, self.task, self.airspace)
 
 
-def get_livetracks(task: Task, pilots: list, timestamp, interval):
+def get_livetracks(task: Task, pilots: list, timestamp, interval: int = default_interval):
     """Requests live tracks fixes to Livetracking Server
     Flymaster gives back chunks of 100 fixes for each live_id"""
     import jsonpickle
