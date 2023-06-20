@@ -130,14 +130,18 @@ def get_datetime(t):
         return t
 
 
-def get_date(t):
+def get_date(t) -> datetime.date or any:
     """
     Transform string in datetime.date
     Gets first 10 positions in string ('YYYY-mm-dd')
+    It should work with any separator
     """
     try:
-        return datetime.strptime(t[:10], '%Y-%m-%d').date()
-    except (ValueError, TypeError) as e:
+        d = t[:10]
+        s = d[4]
+        f = f"%Y{s}%m{s}%d"
+        return datetime.strptime(d, f).date()
+    except (ValueError, TypeError, IndexError) as e:
         return t
 
 
