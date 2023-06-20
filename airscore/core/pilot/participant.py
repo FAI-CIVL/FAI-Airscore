@@ -10,6 +10,7 @@ Use: from participant import Participant
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
+import datetime
 from calcUtils import get_date
 from db.conn import db_session
 from db.tables import TblParticipant as P, TblParticipantMeta as PA, TblCompAttribute as CA
@@ -141,7 +142,8 @@ class Participant(Pilot):
             pilot = Participant(name=abbreviate(name), civl_id=CIVLID)
             pilot.sex = 'F' if int(pil.get('female') if pil.get('female') else 0) > 0 else 'M'
             pilot.nat = pil.get('nat_code_3166_a3') or None
-        pilot.birthdate = get_date(pil.get('birthday') or None)
+        bd = get_date(pil.get('birthday') or None)
+        pilot.birthdate = None if not isinstance(bd, datetime.date) else bd
         pilot.ID = get_int(pil.get('id'))
         pilot.glider = abbreviate(pil.get('glider')) or None
         pilot.sponsor = abbreviate(pil.get('sponsor')) or None
