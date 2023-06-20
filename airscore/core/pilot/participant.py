@@ -266,7 +266,8 @@ def extract_participants_from_excel(comp_id: int, filename, certs: list, from_CI
             pil.attributes = []
         pil.ID = row[0]
         pil.comp_id = comp_id
-        pil.birthdate = None if row[4] is None else row[4].date()  # row[4] should be datetime
+        bd = get_date(row[4] or None)
+        pil.birthdate = None if not isinstance(bd, datetime.date) else bd
         pil.glider = abbreviate(row[5]) or None
         if classes_are_certs:
             pil.glider_cert = row[12]
