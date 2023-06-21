@@ -276,7 +276,10 @@ def get_map_render(folium_map):
     '''clean up css and unuseful elements'''
     # for el in ['meta_http', 'bootstrap_css', 'bootstrap_theme_css', 'jquery', 'bootstrap', 'css_style', 'map_style']:
     for el in ['meta_http', 'bootstrap_css', 'bootstrap_theme_css', 'bootstrap', 'css_style', 'map_style']:
-        del header._children[el]
+        try:
+            del header._children[el]
+        except (NameError, KeyError):
+            continue
     header = header.render()
     '''html to be included in <script>'''
     script = folium_map.get_root().script.render()
