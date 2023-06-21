@@ -590,9 +590,7 @@ def map(paridtaskid):
     from airspaceUtils import read_airspace_map_file
     from mapUtils import create_trackpoints_layer
 
-    parid, taskid = paridtaskid.split("-")
-    parid = int(parid)
-    taskid = int(taskid)
+    parid, taskid = (int(i) for i in paridtaskid.split("-"))
 
     full_tracklog = bool(request.form.get('full') or request.args.get('full'))
     layer = {}

@@ -19,18 +19,20 @@ def lc_calculation(lc, result, fix, next_fix) -> float:
         return 0
 
     time = next_fix.rawtime - lc.best_start_time
-    weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
+    weight = weight_calc(toDo(lc.best_dist_to_ess[1], lc.ss_distance))
     return 0 if weight == 0 else weight * progress * time
 
 
 def tot_lc_calculation(res, t) -> float:
     """Function to calculate final Leading Coefficient for pilots,
     that needs to be done when all tracks have been scored"""
+
     # print(f'Weighted Area Tot LC Calculation')
     if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
-    ss_distance = t.SS_distance / 1000
+
+    ss_distance = t.SS_distance / 1000  # in Km
     if res.ESS_time:
         '''nothing to do'''
         landed_out = 0
@@ -44,8 +46,11 @@ def tot_lc_calculation(res, t) -> float:
 
 def missing_area(time_interval: float, best_distance_to_ESS: float, ss_distance: float) -> float:
     """calculates medium weight for missing portion, missing area using mean weight value"""
-    p = best_distance_to_ESS / ss_distance
-    return weightFalling(p) * time_interval * best_distance_to_ESS
+    return weightFalling(toDo(best_distance_to_ESS, ss_distance)) * time_interval * best_distance_to_ESS
+
+
+def toDo(dist_to_ess: float, ss_distance: float) -> float:
+    return dist_to_ess / ss_distance
 
 
 def weightRising(p: float) -> float:
@@ -56,8 +61,7 @@ def weightFalling(p: float) -> float:
     return (1 - 10 ** (-3 * p)) ** 2
 
 
-def weight_calc(dist_to_ess: float, ss_distance: float) -> float:
-    p = dist_to_ess / ss_distance
+def weight_calc(p: float) -> float:
     return weightRising(p) * weightFalling(p)
 
 

@@ -363,7 +363,7 @@ def pilot_speed(task, res):
         # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal
         # for HG we need a fastest and a fastest in goal in TaskStatsView
         Ptime = res.ss_time
-        SF = 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (2 / 3)
+        SF = 1 - ((Ptime - Tmin) / (60 * sqrt(Tmin))) ** (2/3)  # 1 - ( ((Ptime - Tmin) / 3600) / sqrt(Tmin / 3600) ) ** (2/3)
         if SF > 0:
             Pspeed = Aspeed * SF - (task.time_points_reduction if hasattr(task, 'time_points_reduction') else 0)
 
