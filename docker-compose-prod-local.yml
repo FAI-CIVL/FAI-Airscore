@@ -28,7 +28,7 @@ services:
       WEB_SERVER_CONTAINER: ${WEB_SERVER_CONTAINER}
       FLASK_CONTAINER: ${FLASK_CONTAINER}
       FLASK_PORT: ${FLASK_PORT}
-      REDIS_URL: ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379
+      REDIS_URL: redis://${REDIS_CONTAINER}:6379
       FLASK_ENV: production
       FLASK_DEBUG: 0
       LOG_LEVEL: info
@@ -59,11 +59,11 @@ services:
     image: master-image
     depends_on:
       - redis
-    command: rqworker --with-scheduler --name worker --url ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379/0 ${RQ_QUEUE}
+    command: rqworker --with-scheduler --name worker --url redis://${REDIS_CONTAINER}:6379/0 ${RQ_QUEUE}
     environment:
       FLASK_CONTAINER: ${FLASK_CONTAINER}
       FLASK_PORT: ${FLASK_PORT}
-      REDIS_URL: ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379
+      REDIS_URL: redis://${REDIS_CONTAINER}:6379
       RQ_QUEUE: ${RQ_QUEUE}
       MAIL_SERVER: ${MAIL_SERVER}
       MAIL_PORT: ${MAIL_PORT}
