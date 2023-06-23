@@ -821,12 +821,27 @@ def get_shortest_path(task, ss_distance=False) -> list:
     points = task.projected_turnpoints
     line = task.projected_line
 
-    if ss_distance and any(p for p in points if p.type == 'endspeed'):
-        ESS_index = points.index(next(p for p in points if p.type == 'endspeed'))
-    else:
-        ESS_index = None
+    SSS_index = None
+    ESS_index = None
+    before_SSS = None
 
-    planar_dist, points = calculate_optimised_path(points, ESS_index, line)
+    # Optimised Speed Section Distance Calculation:
+    # (2023)
+    # CIVL: on shorter route between launch and ESS
+    # PWCA: on shorter route between SSS and ESS
+    if ss_distance and any(p for p in points if p.type == 'endspeed'):
+
+        if task.formula.type.lower() == 'pwc':
+            SSS_index = points.index(next(p for p in points if p.type == 'speed'))
+            fake_launch = cPoint(points[SSS_index].x, points[SSS_index].y, 0, 'launch')
+            before_SSS, points = points[:SSS_index], [fake_launch] + points[SSS_index:]
+
+        ESS_index = points.index(next(p for p in points if p.type == 'endspeed'))
+
+    _, points = calculate_optimised_path(points, ESS_index, line)
+
+    if before_SSS:
+        points = before_SSS + points[1:]
 
     '''create optimised points positions on earth model (lat, lon)'''
     optimised = revert_opt_points(points, task.geo)
@@ -922,7 +937,7 @@ def calculate_optimised_path(points: list, ESS_index: int or None, line: list) -
     return last_dist, points
 
 
-def optimize_path(points, count, ESS_index, line):
+def optimize_path(points: list, count: int, ESS_index: int or None, line: list) -> float:
     """Inputs:
     points      - array of point objects
     count       - number of points (not needed)
@@ -946,7 +961,7 @@ def optimize_path(points, count, ESS_index, line):
     return dist
 
 
-def get_target_points(points, count, index, ESS_index):
+def get_target_points(points: list, count: int, index: int, ESS_index: int or None) -> tuple:
     """Inputs:
     points  - array of point objects
     count   - number of points
