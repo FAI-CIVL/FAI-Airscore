@@ -47,15 +47,37 @@ def test_route_distance(task=test_task):
 
 
 def test_opt_route(task=test_task):
+    """
+    Before SS optimised:
+    opt_dist_to_SS = 4799.913132554999
+    SS_distance = 73709.60228966962
+    opt_dist_to_ESS = 78509.51542222462
+    opt_dist_ESS_goal = 2995.165098084239
+    opt_dist = 81504.68052030886
+    partial_distances = [0, 4799.913132554999, 23075.3094884808, 58794.22702507772, 78509.51542222462, 81504.68052030886]
+
+    After SS optimised:
+    Formula: pwc 2023
+    SS_distance = 73131.30677591835
+    Formula: gap 2022
+    SS_distance = 73708.14384420638
+    """
     task.calculate_optimised_task_length()
     assert math.isclose(task.opt_dist, 81504.6, abs_tol=1)
-    assert math.isclose(task.opt_dist_to_SS, 4799.97, abs_tol=1)
-    assert math.isclose(task.opt_dist_to_ESS, 78508.1, abs_tol=1)
-    assert math.isclose(task.SS_distance, 73708.1, abs_tol=1)
-    # partial_distances = [0, 4799.9737887617, 23075.284840766, 58796.04787950, 78508.057227873, 81506.139470692]
-    partial_distances = [0, 4799.97, 23075.285, 58794.26, 78509.5, 81504.7]
+    assert math.isclose(task.opt_dist_to_SS, 4799.9, abs_tol=1)
+    assert math.isclose(task.opt_dist_to_ESS, 78509.5, abs_tol=1)
+
+    partial_distances = [0, 4799.91, 23075.3, 58794.2, 78509.5, 81504.7]
     for idx, d in enumerate(task.partial_distance):
         assert math.isclose(d, partial_distances[idx], abs_tol=1)
+
+    # SS Distance Optimization:
+    # PWCA
+    assert math.isclose(task.SS_distance, 73131.3, abs_tol=1)
+    # CIVL
+    task.formula.formula_name = "GAP2022"
+    task.calculate_optimised_task_length()
+    assert math.isclose(task.SS_distance, 73708.1, abs_tol=1)
 
 
 def test_check_in_radius():
