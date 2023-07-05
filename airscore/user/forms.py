@@ -59,7 +59,7 @@ class RegisterForm(FlaskForm):
         super(RegisterForm, self).__init__(*args, **kwargs)
         self.user = None
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         """Validate the form."""
         initial_validation = super(RegisterForm, self).validate()
         if not initial_validation:
@@ -543,7 +543,7 @@ class UserForm(FlaskForm):
 
     submit = SubmitField('Save')
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         """Validate the form."""
         initial_validation = super(UserForm, self).validate()
         if not initial_validation:
