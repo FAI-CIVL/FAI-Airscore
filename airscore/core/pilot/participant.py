@@ -11,6 +11,7 @@ Stuart Mackintosh Antonio Golfari - 2019
 """
 
 import datetime
+
 from calcUtils import get_date
 from db.conn import db_session
 from db.tables import TblParticipant as P, TblParticipantMeta as PA, TblCompAttribute as CA
@@ -208,7 +209,7 @@ def extract_participants_from_excel(comp_id: int, filename, certs: list, from_CI
         comp_id:    INT comp_id
         filename:   STR filename
         from_CIVL:  BOOL retrieve data from CIVL database using CIVLID
-    - read Airtribune XSLX file
+    - read Airtribune XLSX file
 
     excel file format:
     column name on row 1

@@ -20,7 +20,7 @@ formula_class = 'PG'
 ''' Default Formula presets
     pg_preset: PG default values, if formula applies for PG or mixed
     hg_preset: HG default values, if formula applies for HG or mixed  
-  
+
     value:      default value of the parameter
     visible:    whether parameter is visible or not in frontend
     editable:   whether parameter is editable by user or not in frontend
@@ -36,7 +36,7 @@ pg_preset = FormulaPreset(
     formula_arrival=Preset(value='off', visible=False),
     # Departure Points: on, leadout, off
     formula_departure=Preset(value='leadout', visible=False),
-    # Lead Factor: factor for Leadou Points calculation formula
+    # Lead Factor: factor for Leadout Points calculation formula
     lead_factor=Preset(value=1.0, visible=False),
     # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
     # lead_squared_distance=Preset(value=True, visible=False),

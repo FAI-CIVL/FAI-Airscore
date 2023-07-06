@@ -249,8 +249,6 @@ def get_season_dates(ladder_id: int, season: int, date_from: datetime.date = Non
 
 ''' This are functions used by FSComp to calculate exact pressure altitude.
     I think it is an overkill. Also, I don't think Flight Levels are calculated on ISA values.'''
-
-
 def CalculateQnhAltitude(pressure: float, qnh: float):
     import math
 
@@ -267,8 +265,6 @@ def CalculatePressure(baroAltitude: float):
 
 
 ''' ISA pressure calculation'''
-
-
 def isa(alt: float):
     """return a 2-uplet (pressure, temperature) depending on provided altitude.
     Units are SI (m, PA, Kelvin)

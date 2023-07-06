@@ -177,19 +177,20 @@ class CompForm(FlaskForm):
     help_nom_goal = "The percentage of pilots the meet director would wish to have in goal in a well-chosen task. " \
                     "This is typically 20 to 40%. This parameter has a very marginal effect on distance validity."
 
-    help_nom_time = "Nominal time indicates the expected task duration, the amount of time required to fly the speed" \
-                    " section. If the fastest pilot’s time is below nominal time, the task will be devalued. There is" \
-                    " no devaluation if the fastest pilot’s time is above nominal time. Nominal time should be set " \
+    help_nom_time = "Nominal time indicates the expected task duration, the amount of time required to fly the speed " \
+                    "section. If the fastest pilot’s time is below nominal time, the task will be devalued. There is " \
+                    "no devaluation if the fastest pilot’s time is above nominal time. Nominal time should be set " \
                     "to the expected “normal” task duration for the competition site, and nominal distance / nominal " \
                     "time should be a bit higher than typical average speeds for the area."
 
-    help_score_back = "In a stopped task, this value defines the amount of time before the task stop was announced" \
-                      " that will not be considered for scoring. The default is 5 minutes, but depending on local " \
+    help_score_back = "In a stopped task, this value defines the amount of time before the task stop was announced " \
+                      "that will not be considered for scoring. The default is 5 minutes, but depending on local " \
                       "meteorological circumstances, it may be set to a longer period for a whole competition."
 
-    help_lead_factor = "this is a multiplier factor that influences the ratio between leading and time points. " \
-                       " Changing this parameter will affect considerably the results, so it is recommended " \
-                       " to leave the default value."
+    help_lead_factor = "Starting with GAP2023 this is called LeadingTimeRatio. " \
+                       "This is a multiplier factor that influences the ratio between leading and time points. " \
+                       "Changing this parameter will affect considerably the results, so it is recommended " \
+                       "to leave the default value."
 
     comp_name = StringField('Competition Name')
     comp_code = StringField('Short name', render_kw=dict(maxlength=8), description='An abbreviated name (max 8 chars) '
