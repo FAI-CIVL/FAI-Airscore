@@ -25,7 +25,7 @@ RUN useradd -m sid
 RUN chown -R sid:sid /app
 USER sid
 ENV PATH="/home/sid/.local/bin:${PATH}"
-ENV PYTHONPATH="${PYTHONPATH}:/app/airscore/core:/app"
+ENV PYTHONPATH="${PYTHONPATH:-/app/airscore/core}:/app"
 
 RUN npm install
 
