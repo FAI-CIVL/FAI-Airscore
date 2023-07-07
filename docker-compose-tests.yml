@@ -24,10 +24,6 @@ services:
       SEND_FILE_MAX_AGE_DEFAULT: 0
 #      PYTHONPATH: ${app}:src
       REDIS_URL: redis://redis:6379
-      REDIS_CONTAINER: redis
-      WEB_SERVER_CONTAINER: dummy
-      FLASK_CONTAINER: flask_dev
-      FLASK_PORT: 3214
       MAIL_SERVER: dummy
       MAIL_PORT: 123
       MAIL_USE_TLS: 0

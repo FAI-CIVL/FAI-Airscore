@@ -18,7 +18,7 @@ services:
       target: production
       args:
         <<: *build_args
-    command: gunicorn airscore.app:create_app() -b :5000 -w ${GUNICORN_WORKERS} -k gevent
+    command: gunicorn -b :5000 -w ${GUNICORN_WORKERS} -k gevent 'airscore.app:create_app()'
     image: master-image
     container_name: ${FLASK_CONTAINER}
     ports:
