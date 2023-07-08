@@ -24,6 +24,7 @@ services:
     ports:
       - "5000:5000"
     environment:
+      PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
       REDIS_CONTAINER: ${REDIS_CONTAINER}
       WEB_SERVER_CONTAINER: ${WEB_SERVER_CONTAINER}
       FLASK_CONTAINER: ${FLASK_CONTAINER}
@@ -61,6 +62,7 @@ services:
       - redis
     command: rqworker --with-scheduler --name worker --url redis://${REDIS_CONTAINER}:6379/0 ${RQ_QUEUE}
     environment:
+      PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
       FLASK_CONTAINER: ${FLASK_CONTAINER}
       FLASK_PORT: ${FLASK_PORT}
       REDIS_URL: redis://${REDIS_CONTAINER}:6379
