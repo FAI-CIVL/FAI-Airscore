@@ -24,6 +24,7 @@ from db.conn import db_session
 from db.tables import TblResultFile
 from sqlalchemy import and_
 from Defines import RESULTDIR
+from calcUtils import c_round
 from pathlib import Path
 
 
@@ -312,6 +313,11 @@ class TaskResult:
             ''' Stats Table'''
             stats = []
             right_align = [1]
+            # adding SS_distance info as it changes based on scoring system (2023)
+            key, value = next(((k, v) for k, v in res['info'].items() if k == 'SS_distance'), (None, None))
+            if key:
+                stats.append([key, value])
+
             for key, value in res['stats'].items():
                 stats.append([key, value])
             stats = dict(title='Stats:', css_class='simple', right_align=right_align, tbody=stats)
@@ -508,9 +514,8 @@ class CompResult(object):
                 row = [p['rankings'][k] if i == 0 else p[k] for i, k in enumerate(keys)]
                 for t in res['tasks']:
                     code = t['task_code']
-                    pre, score = p['results'][code]['pre'], p['results'][code]['score']
-                    result = score if score == pre else f"{score} <del>{pre}</del>"
-                    row.append(result)
+                    score = p['results'][code]['score']
+                    row.append(score)
                 tbody.append(row)
             results = dict(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
             tables = [tasks, results]
@@ -534,7 +539,7 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
     :param
     name_suffix: optional name suffix if None a timestamp will be used.
         This is so we can overwrite comp results that are only used in front end to create competition
-         page not display results
+        page not display results
     """
     from datetime import datetime
     from time import time
@@ -827,7 +832,7 @@ def get_country_list(countries: set = None, iso: int = None) -> list:
 
 
 def pretty_format_results(content, timeoffset=0, td=0, cd=0):
-    from calcUtils import c_round, epoch_to_string, sec_to_duration, sec_to_string
+    from calcUtils import epoch_to_string, sec_to_duration, sec_to_string
 
     pure_time = ['ss_time', 'time_offset', 'fastest', 'fastest_in_goal']
     duration = ['tot_flight_time', 'SS_interval', 'max_JTG', 'validity_min_time', 'score_back_time']
