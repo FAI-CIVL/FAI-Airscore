@@ -265,17 +265,22 @@ def check_fixes(
         - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
         '''
         if tp.pointer > 0:
-            if tp.start_done and not tp.ess_done:
-                '''optimized distance calculation each fix'''
-                dist_to_goal, dist_to_ESS = get_fix_dist_to_goal(task, next_fix, tp.pointer)
-                fix_dist_flown = task.opt_dist - dist_to_goal
-                # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Optimized Distance used')
-            else:
-                '''simplified and faster distance calculation'''
-                fix_dist_flown = distance_flown(
-                    next_fix, tp.pointer, task.optimised_turnpoints, task.turnpoints[tp.pointer], distances2go
-                )
-                # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
+            # this is the simplified distance calculation code used out of speed section, but error was quite huge
+            # for pilots who bomb out before SSS
+            # if tp.start_done and not tp.ess_done:
+            #     '''optimized distance calculation each fix'''
+            #     dist_to_goal, dist_to_ESS = get_fix_dist_to_goal(task, next_fix, tp.pointer)
+            #     fix_dist_flown = task.opt_dist - dist_to_goal
+            #     # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Optimized Distance used')
+            # else:
+            #     '''simplified and faster distance calculation'''
+            #     fix_dist_flown = distance_flown(
+            #         next_fix, tp.pointer, task.optimised_turnpoints, task.turnpoints[tp.pointer], distances2go
+            #     )
+            #     # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
+            '''optimized distance calculation each fix'''
+            dist_to_goal, dist_to_ESS = get_fix_dist_to_goal(task, next_fix, tp.pointer)
+            fix_dist_flown = task.opt_dist - dist_to_goal
 
             if fix_dist_flown > result.distance_flown:
                 '''time of trackpoint with shortest distance to ESS'''
@@ -298,9 +303,7 @@ def check_fixes(
                     stopped_altitude = alt
                     total_distance = min(fix_dist_flown + glide_ratio * alt_over_goal, task.opt_dist)
 
-        '''Leading coefficient
-        LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
-        i : i ? TrackPoints In SS'''
+        '''Leading coefficient'''
         if lead_coeff and tp.start_done and not tp.ess_done:
             lead_coeff.update(result, my_fix, next_fix, dist_to_ESS)
 
