@@ -142,7 +142,8 @@ class Formula(object):
         country_scoring=False,
         country_size=0,
         max_country_size=0,
-        team_over=None
+        team_over=None,
+        **kwargs
     ):
 
         self.comp_id = comp_id
@@ -182,6 +183,9 @@ class Formula(object):
         self.country_size = country_size
         self.max_country_size = max_country_size
         self.team_over = team_over
+
+        for k,v in kwargs.items():
+            setattr(self, k, v)
 
     def __eq__(self, other):
         if not isinstance(other, Formula):
