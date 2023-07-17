@@ -29,6 +29,7 @@ formula_class = 'BOTH'
 pg_preset = FormulaPreset(
     # This part should not be edited
     formula_name=Preset(value=formula_name, visible=True, editable=True),
+
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='on', visible=True, editable=True),
@@ -75,14 +76,15 @@ pg_preset = FormulaPreset(
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='GPS', visible=True, editable=True),
     # Decimals to be displayed in Task results: default is 0
-    task_result_decimal=Preset(value=0, visible=False, editable=False),
+    task_result_decimal=Preset(value=0, visible=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False),
+    comp_result_decimal=Preset(value=0, visible=False),
 )
 
 hg_preset = FormulaPreset(
     # This part should not be edited
     formula_name=Preset(value=formula_name, visible=True, editable=True),
+
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='difficulty', visible=True, editable=True),
@@ -129,9 +131,9 @@ hg_preset = FormulaPreset(
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='QNH', visible=True, editable=True),
     # Decimals to be displayed in Task results: default is 0
-    task_result_decimal=Preset(value=0, visible=False, editable=False),
+    task_result_decimal=Preset(value=0, visible=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False),
+    comp_result_decimal=Preset(value=0, visible=False),
 )
 
 

@@ -29,15 +29,16 @@ formula_class = 'BOTH'
 pg_preset = FormulaPreset(
     # This part should not be edited
     formula_name=Preset(value=formula_name, visible=True, editable=True),
+
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='on', visible=True, editable=False),
     # Arrival Points: position, time, off
-    formula_arrival=Preset(value='off', visible=False, editable=False),
+    formula_arrival=Preset(value='off', visible=False),
     # Departure Points: on, leadout, off
     formula_departure=Preset(value='leadout', visible=True, editable=False),
     # Lead Factor: factor for Leadout Points calculation formula
-    lead_factor=Preset(value=1.0, visible=False, editable=False),
+    lead_factor=Preset(value=1.0, visible=False),
     # Lead Coeff formula: classic, weighted, integrated
     lc_formula=Preset(value='weighted', visible=False),
     # Time Points: on, off
@@ -57,9 +58,9 @@ pg_preset = FormulaPreset(
     # Score back time for Stopped Tasks (minutes)
     score_back_time=Preset(value=300, visible=True, editable=True, comment='default: 5 mins'),
     # Jump the Gun: 1 or 0
-    max_JTG=Preset(value=0, visible=False, editable=False),
+    max_JTG=Preset(value=0, visible=False),
     # Penalty per Jump the Gun second
-    JTG_penalty_per_sec=Preset(value=None, visible=False, editable=False),
+    JTG_penalty_per_sec=Preset(value=None, visible=False),
     # Type of Total Validity: ftv, all
     overall_validity=Preset(value='ftv', visible=True, editable=True),
     # FTV Parameter
@@ -77,14 +78,15 @@ pg_preset = FormulaPreset(
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='GPS', visible=True, editable=True),
     # Decimals to be displayed in Task results: default is 0
-    task_result_decimal=Preset(value=1, visible=False, editable=False),
+    task_result_decimal=Preset(value=1, visible=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False),
+    comp_result_decimal=Preset(value=0, visible=False),
 )
 
 hg_preset = FormulaPreset(
     # This part should not be edited
     formula_name=Preset(value=formula_name, visible=True, editable=True),
+
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='difficulty', visible=True, editable=True),
@@ -131,9 +133,9 @@ hg_preset = FormulaPreset(
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='QNH', visible=True, editable=True),
     # Decimals to be displayed in Task results: default is 0
-    task_result_decimal=Preset(value=1, visible=False, editable=False),
+    task_result_decimal=Preset(value=1, visible=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False),
+    comp_result_decimal=Preset(value=0, visible=False),
 )
 
 

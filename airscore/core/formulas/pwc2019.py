@@ -29,6 +29,7 @@ formula_class = 'PG'
 pg_preset = FormulaPreset(
     # This part should not be edited
     formula_name=Preset(value=formula_name, visible=True, editable=True),
+
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='on', visible=False),
@@ -75,9 +76,9 @@ pg_preset = FormulaPreset(
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='GPS', visible=True, editable=True),
     # Decimals to be displayed in Task results: default is 0
-    task_result_decimal=Preset(value=0, visible=False, editable=False),
+    task_result_decimal=Preset(value=0, visible=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False),
+    comp_result_decimal=Preset(value=0, visible=False),
 )
 
 
@@ -128,11 +129,10 @@ def points_weight(task):
 
     '''Stopped Task'''
     if task.stopped_time and task.pilots_ess:
-        '''12.3.5
-        A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
-        This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
-        the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
-        had just reached ESS at task stop time.
+        '''C.7
+        A fixed amount of points is subtracted from the time points of each pilot that makes goal 
+        in a stopped task and is added instead to the distance points allocation. 
+        This amount is the amount of time points a pilot would receive if he had reached ESS exactly at the Task Stop Time.
         '''
         task.time_points_reduction = calculate_time_points_reduction(task)
         task.avail_dist_points += task.time_points_reduction

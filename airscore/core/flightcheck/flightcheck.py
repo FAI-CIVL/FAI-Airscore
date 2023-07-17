@@ -11,7 +11,6 @@ from route import (
     distance_flown,
     get_fix_dist_to_goal,
     in_goal_sector,
-    start_made_civl,
     tp_made_civl,
     tp_time_civl,
 )

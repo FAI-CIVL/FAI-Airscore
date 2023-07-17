@@ -43,12 +43,14 @@ def list_formulas():
 
 def get_formula_lib_by_name(formula_name: str):
     """get formula library to use in scoring"""
-    formula_file = 'formulas.' + formula_name.lower()
     try:
+        formula_file = 'formulas.' + formula_name.lower()
         return importlib.import_module(formula_file, package=None)
+    except AttributeError as e:
+        print(f'Error: formula name is empty')
     except (ModuleNotFoundError, Exception):
-        print(f'formula file {formula_file} not found.')
-        return None
+        print(f'Error: formula file {formula_file} not found.')
+    return None
 
 
 @dataclass(frozen=True)
@@ -88,11 +90,11 @@ class FormulaPreset:
     task_result_decimal: Preset
     comp_result_decimal: Preset
 
-    def as_formula(self):
+    def as_formula(self) -> dict:
         """ gets presets' value"""
         return {x.name: getattr(self, x.name).value for x in fields(self)}
 
-    def has_calculated_values(self):
+    def has_calculated_values(self) -> bool:
         """ returns True if any value needs to be calculated using lib.calculate_parameters()"""
         return any(v.get('calculated') for k, v in asdict(self).items())
 
@@ -296,8 +298,9 @@ class Formula(object):
     def from_preset(cls, comp_class: str, formula_name: str):
         """ Create Formula obj. from preset values in formula script"""
         lib = get_formula_lib_by_name(formula_name)
-        preset = lib.pg_preset if comp_class in ('PG', 'mixed') else lib.hg_preset
-        return cls(**preset.as_formula())
+        if lib:
+            preset = lib.hg_preset if comp_class == 'HG' else lib.pg_preset
+            return cls(**preset.as_formula())
 
     @classmethod
     def from_fsdb(cls, fs_info, comp_class):
@@ -333,14 +336,15 @@ class Formula(object):
 
     def reset(self, comp_class: str, formula_name: str):
         lib = get_formula_lib_by_name(formula_name)
-        preset = lib.pg_preset if comp_class in ('PG', 'mixed') else lib.hg_preset
-        self.as_dict().update(preset.as_formula())
-        self.calculate_parameters(lib)
+        if lib:
+            preset = lib.hg_preset if comp_class == 'HG' else lib.pg_preset
+            self.as_dict().update(preset.as_formula())
+            self.calculate_parameters(lib)
 
     def calculate_parameters(self, lib=None):
         if not lib:
             lib = get_formula_lib_by_name(self.formula_name)
-        if 'calculate_parameters' in dir(lib):
+        if lib and 'calculate_parameters' in dir(lib):
             lib.calculate_parameters(self.as_dict())
 
     def fill_from_preset(self):
