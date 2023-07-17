@@ -108,6 +108,7 @@ class TaskFormulaView(BaseModel):
         Column('task_id', INTEGER(11), primary_key=True),
         Column('comp_id', INTEGER(11), index=True),
         Column('formula_name', String(50)),
+        Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
         Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
         Column('validity_param', NUMERIC(precision=4, asdecimal=False), server_default=text("'0.750'")),
         Column('validity_ref', Enum('day_quality', 'max_score'), server_default=text("'max_score'")),
