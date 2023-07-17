@@ -24,7 +24,7 @@ def test_partial_distance():
 
 def test_formula():
     f = TaskFormulaFactory()
-    f.formula_name = 'PWC2016'
+    f.formula_name = 'PWC2019'
     f.overall_validity = 'ftv'
     f.validity_param = 0.75
     f.formula_distance = 'on'
@@ -57,6 +57,7 @@ def test_formula():
     f.country_scoring = 1
     f.country_size = 2
     f.max_country_size = 4
+    f.fill_from_preset()
     return f
 
 

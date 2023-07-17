@@ -76,6 +76,7 @@ def test_opt_route(task=test_task):
     assert math.isclose(task.SS_distance, 73131.3, abs_tol=1)
     # CIVL
     task.formula.formula_name = "GAP2022"
+    task.formula.ss_dist_calc = "launch_to_ess"
     task.calculate_optimised_task_length()
     assert math.isclose(task.SS_distance, 73708.1, abs_tol=1)
 
