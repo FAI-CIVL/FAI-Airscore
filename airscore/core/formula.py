@@ -352,6 +352,12 @@ class Formula(object):
         """get formula library to use in scoring"""
         return get_formula_lib_by_name(self.formula_name)
 
+    def get_preset(self):
+        """get class formula preset from formula library"""
+        lib = get_formula_lib_by_name(self.formula_name)
+        if lib:
+            return lib.hg_preset if self.comp_class == 'HG' else lib.pg_preset
+
 
 class TaskFormula(Formula):
     """

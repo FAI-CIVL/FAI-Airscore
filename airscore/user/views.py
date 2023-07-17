@@ -603,8 +603,7 @@ def comp_settings_admin(compid: int):
     session['check_g_record'] = comp.check_g_record
     session['track_source'] = comp.track_source
 
-    lib = comp.formula.get_lib()
-    formula_preset = None if not lib else lib.pg_preset if comp.comp_class == 'PG' else lib.hg_preset
+    formula_preset = comp.formula.get_preset()
 
     if comp.external:
         '''External Event'''
@@ -824,8 +823,7 @@ def task_admin(taskid: int):
         if task_info['cancelled'] or task_info['locked'] or not session['is_editor']:
             taskform.submit = None
         elif not session['external']:
-            lib = task.formula.get_lib()
-            formula_preset = lib.pg_preset if session['comp_class'] == 'PG' else lib.hg_preset
+            formula_preset = task.formula.get_preset()
 
         return render_template('users/task_admin.html', taskid=taskid, compid=task.comp_id, task_info=task_info,
                                taskform=taskform, turnpointform=turnpointform, modifyturnpointform=modifyturnpointform,

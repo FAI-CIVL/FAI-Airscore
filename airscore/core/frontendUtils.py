@@ -1175,8 +1175,7 @@ def get_comp_formula_preset(comp_id: int, formula_name: str, comp_class: str) ->
     from formula import Formula
     formula = Formula.read(comp_id)
     formula.reset(comp_class, formula_name)
-    lib = formula.get_lib()
-    preset = lib.pg_preset if comp_class == 'PG' else lib.hg_preset
+    preset = formula.get_preset()
     return formula, preset
 
 
