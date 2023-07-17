@@ -38,8 +38,8 @@ pg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=True, editable=True),
     # Lead Factor: factor for Leadout Points calculation formula
     lead_factor=Preset(value=2.0, visible=True, editable=True),
-    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
-    # lead_squared_distance=Preset(value=True, visible=True, editable=True),
+    # Lead Coeff formula: classic, weighted, integrated
+    lc_formula=Preset(value='classic', visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=True),
     # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess
@@ -92,8 +92,8 @@ hg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=True, editable=True),
     # Lead Factor: factor for Leadout Points calculation formula
     lead_factor=Preset(value=1.0, visible=True, editable=True),
-    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
-    # lead_squared_distance=Preset(value=True, visible=True, editable=True),
+    # Lead Coeff formula: classic, weighted, integrated
+    lc_formula=Preset(value='classic', visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=True),
     # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess

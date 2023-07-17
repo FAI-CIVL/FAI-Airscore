@@ -9,7 +9,7 @@ Scoring Formula Script
 """
 from formula import FormulaPreset, Preset
 from formulas.libs.pwc import *
-from formulas import lclib
+from formulas.libs.leadcoeff import *
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
@@ -38,8 +38,8 @@ pg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=False),
     # Lead Factor: factor for Leadout Points calculation formula
     lead_factor=Preset(value=1.0, visible=False),
-    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
-    # lead_squared_distance=Preset(value=True, visible=False),
+    # Lead Coeff formula: classic, weighted, integrated
+    lc_formula=Preset(value='weighted', visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=False),
     # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess
@@ -138,22 +138,3 @@ def points_weight(task):
         task.avail_dist_points += task.time_points_reduction
     else:
         task.time_points_reduction = 0
-
-
-def lead_coeff_function(lc, result, fix, next_fix):
-    """
-    PWC2019 leading Coefficient Calculation
-    11.3.1 Leading coefficient
-    PG: weighted area calculation
-    """
-
-    return lclib.weightedarea.lc_calculation(lc, result, fix, next_fix)
-
-
-def tot_lc_calc(res, t):
-    """Function to calculate final Leading Coefficient for pilots,
-    that needs to be done when all tracks have been scored
-    PG: weighted area calculation
-    """
-
-    return lclib.weightedarea.tot_lc_calculation(res, t)

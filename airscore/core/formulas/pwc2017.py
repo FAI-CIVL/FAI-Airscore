@@ -8,8 +8,8 @@ Scoring Formula Script
     Defines standard parameters values for each class
 """
 from formula import FormulaPreset, Preset
-from formulas.libs.leadcoeff import *
 from formulas.libs.pwc import *
+from formulas.libs.leadcoeff import *
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
@@ -38,8 +38,8 @@ pg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=False),
     # Lead Factor: factor for Leadout Points calculation formula
     lead_factor=Preset(value=1.0, visible=False),
-    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
-    # lead_squared_distance=Preset(value=True, visible=False),
+    # Lead Coeff formula: classic, weighted, integrated
+    lc_formula=Preset(value='classic', visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=False),
     # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess

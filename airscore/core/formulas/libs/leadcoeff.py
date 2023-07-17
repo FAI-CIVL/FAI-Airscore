@@ -4,7 +4,6 @@ Leading Coefficient Calculation Library
 contains
     - All procedures to calculate Leading Coefficient according to PWC GAP Formula
 
-
 Stuart Mackintosh, Antonio Golfari - 2019
 """
 from formulas import lclib
@@ -20,6 +19,16 @@ class LeadCoeff(object):
         self.lib = task.formula.get_lib()
         self.comp_class = task.comp_class
         self.summing = 0.0
+
+        # integrated calculation
+        self.formula = task.formula.lc_formula
+        if self.formula == 'integrated':
+            if not hasattr(task.formula, 'matrix') or not task.formula.matrix:
+                task.formula.matrix = lclib.weightedarea.weight_matrix()
+            self.matrix = task.formula.matrix
+            self.slices = len(self.matrix)
+            self.latest_index = self.slices - 1
+            self.slice_dist = self.ss_distance / self.slices
 
     @property
     def best_dist_to_ess_m(self):
@@ -37,10 +46,14 @@ class LeadCoeff(object):
         self.best_dist_to_ess.pop(0)
 
 
-def lead_coeff_function(lc, result, fix, next_fix):
-    """Lead Coefficient formula from GAP2016
+def lead_coeff_function(lc: LeadCoeff, result, fix, next_fix):
+    """Lead Coefficient formula
     Default fallback
     This is the default function if not present in Formula library"""
+    if lc.formula == 'integrated':
+        return lclib.weightedarea.lc_calculation_integrate(lc, result, fix, next_fix)
+    elif lc.formula == 'weighted':
+        return lclib.weightedarea.lc_calculation(lc, result, fix, next_fix)
     return lclib.classic.lc_calculation(lc, result, fix, next_fix)
 
 
@@ -48,6 +61,10 @@ def tot_lc_calc(res, t):
     """Lead Coefficient formula from GAP2016
     Default fallback
     This is the default function if not present in Formula library"""
+    if t.formula.lc_formula == 'integrated':
+        return lclib.weightedarea.tot_lc_calculation_integrate(res, t)
+    elif t.formula.lc_formula == 'weighted':
+        return lclib.weightedarea.tot_lc_calculation(res, t)
     return lclib.classic.tot_lc_calculation(res, t)
 
 

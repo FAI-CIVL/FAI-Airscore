@@ -67,7 +67,7 @@ class FormulaPreset:
     formula_arrival: Preset
     formula_departure: Preset
     lead_factor: Preset
-    # lead_squared_distance: Preset
+    lc_formula: Preset
     formula_time: Preset
     ss_dist_calc: Preset
     arr_alt_bonus: Preset

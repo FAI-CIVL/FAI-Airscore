@@ -10,7 +10,6 @@ Scoring Formula Script
 from formula import FormulaPreset, Preset
 from formulas.libs.gap import *
 from formulas.libs.leadcoeff import *
-from formulas import lclib
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
@@ -39,8 +38,8 @@ pg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=True, editable=False),
     # Lead Factor: factor for Leadout Points calculation formula
     lead_factor=Preset(value=1.0, visible=False, editable=False),
-    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
-    # lead_squared_distance=Preset(value=True, visible=True, editable=True),
+    # Lead Coeff formula: classic, weighted, integrated
+    lc_formula=Preset(value='weighted', visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=False),
     # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess
@@ -95,8 +94,8 @@ hg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=True, editable=True),
     # Lead Factor: factor for Leadout Points calculation formula
     lead_factor=Preset(value=1.0, visible=True, editable=True),
-    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
-    # lead_squared_distance=Preset(value=True, visible=True, editable=True),
+    # Lead Coeff formula: classic, weighted, integrated
+    lc_formula=Preset(value='classic', visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=True),
     # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess
@@ -313,31 +312,6 @@ def pilot_speed(task, res):
     Pspeed = Aspeed * SF - task.time_points_reduction if SF > 0 else 0
 
     return Pspeed
-
-
-def lead_coeff_function(lc, result, fix, next_fix):
-    """
-    GAP2020 leading Coefficient Calculation
-    11.3.1 Leading coefficient
-    HG: classic LC calculation
-    PG: weighted area calculation
-    """
-    if lc.comp_class == 'HG':
-        return lclib.classic.lc_calculation(lc, result, fix, next_fix)
-    else:
-        return lclib.weightedarea.lc_calculation(lc, result, fix, next_fix)
-
-
-def tot_lc_calc(res, t):
-    """Function to calculate final Leading Coefficient for pilots,
-    that needs to be done when all tracks have been scored
-    HG: classic LC calculation
-    PG: weighted area calculation
-    """
-    if t.comp_class == 'HG':
-        return lclib.classic.tot_lc_calculation(res, t)
-    else:
-        return lclib.weightedarea.tot_lc_calculation(res, t)
 
 
 def points_allocation(task):
