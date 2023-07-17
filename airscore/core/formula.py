@@ -287,6 +287,8 @@ class Formula(object):
             q = db.query(F).get(comp_id)
             if q is not None:
                 q.populate(formula)
+        # get further values from preset
+        formula.fill_from_preset()
         return formula
 
     @classmethod
@@ -339,6 +341,13 @@ class Formula(object):
             lib = get_formula_lib_by_name(self.formula_name)
         if 'calculate_parameters' in dir(lib):
             lib.calculate_parameters(self.as_dict())
+
+    def fill_from_preset(self):
+        preset = self.get_preset()
+        if preset:
+            for k, v in preset.as_formula().items():
+                if v is not None and (not hasattr(self, k) or getattr(self, k) is None):
+                    setattr(self, k, v)
 
     def to_db(self):
         """stores formula to TblForComp table in AirScore database"""
@@ -395,6 +404,8 @@ class TaskFormula(Formula):
             q = db.query(F).get(comp_id)
             if q is not None:
                 q.populate(formula)
+                # get further values from preset
+                formula.fill_from_preset()
         return formula
 
     @classmethod
@@ -410,6 +421,8 @@ class TaskFormula(Formula):
         from db.tables import TaskFormulaView as F
 
         formula = F.get_by_id(task_id).populate(TaskFormula())
+        # get further values from preset
+        formula.fill_from_preset()
         return formula
 
     def to_db(self):
