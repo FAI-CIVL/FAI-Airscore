@@ -218,6 +218,19 @@ def pilot_leadout(task, res):
     return Pdepart
 
 
+def speed_fraction(task, res) -> float:
+    if task.formula.no_goal_penalty < 1 or (task.stopped_time and not task.fastest_in_goal):
+        Tmin = task.fastest  
+    else:
+        Tmin = task.fastest_in_goal
+    Ptime = res.ss_time
+    if not Tmin or res.ESS_time is None or Ptime < Tmin:
+        # checking that task has pilots in ESS, and that pilot is in ESS
+        return 0
+    print(f"Pilot {res.ID} time {Ptime} | Tmin {Tmin}")
+    return 1 - ((Ptime - Tmin) / (60 * sqrt(Tmin))) ** (5/6)  # 1 - ( ((Ptime - Tmin) / 3600) / sqrt(Tmin / 3600) ) ** (5/6)
+
+
 def pilot_speed(task, res):
     """
     Args:
@@ -231,16 +244,12 @@ def pilot_speed(task, res):
     Aspeed = task.avail_time_points
 
     # C.6.2 Time Points
-    Tmin = task.fastest or 0  # Sanity check should not be needed here
     Pspeed = 0
+    Pred = task.time_points_reduction if hasattr(task, 'time_points_reduction') else 0
+    SF = speed_fraction(task, res)
 
-    if res.ESS_time and Tmin > 0:  # checking that task has pilots in ESS, and that pilot is in ESS
-        # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal
-        # for HG we need a fastest and a fastest in goal in TaskStatsView
-        Ptime = res.ss_time
-        SF = 1 - ((Ptime - Tmin) / (60 * sqrt(Tmin))) ** (5/6)  # 1 - ( ((Ptime - Tmin) / 3600) / sqrt(Tmin / 3600) ) ** (5/6)
-        if SF > 0:
-            Pspeed = Aspeed * SF - (task.time_points_reduction if hasattr(task, 'time_points_reduction') else 0)
+    if SF > Pred:
+        Pspeed = Aspeed * SF - Pred
 
     return Pspeed
 
