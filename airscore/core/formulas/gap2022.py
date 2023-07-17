@@ -43,6 +43,8 @@ pg_preset = FormulaPreset(
     # lead_squared_distance=Preset(value=True, visible=True, editable=True),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=False),
+    # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess
+    ss_dist_calc=Preset(value='launch_to_ess', visible=False),
     # Arrival Altitude Bonus: Bonus points factor on ESS altitude
     arr_alt_bonus=Preset(value=0, visible=True, editable=True, comment='default: disabled'),
     # ESS Min Altitude
@@ -97,6 +99,8 @@ hg_preset = FormulaPreset(
     # lead_squared_distance=Preset(value=True, visible=True, editable=True),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=True),
+    # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess
+    ss_dist_calc=Preset(value='launch_to_ess', visible=False),
     # Arrival Altitude Bonus: Bonus points factor on ESS altitude
     arr_alt_bonus=Preset(value=0, visible=True, editable=True),
     # ESS Min Altitude

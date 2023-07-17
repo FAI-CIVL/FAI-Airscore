@@ -829,9 +829,8 @@ def get_shortest_path(task, ss_distance=False) -> list:
     # (2023)
     # CIVL: on shorter route between launch and ESS
     # PWCA: on shorter route between SSS and ESS
-    if ss_distance and any(p for p in points if p.type == 'endspeed'):
-
-        if task.formula.type.lower() == 'pwc':
+    if ss_distance:
+        if task.formula.ss_dist_calc == 'sss_to_ess':
             SSS_index = points.index(next(p for p in points if p.type == 'speed'))
             fake_launch = cPoint(points[SSS_index].x, points[SSS_index].y, 0, 'launch')
             before_SSS, points = points[:SSS_index], [fake_launch] + points[SSS_index:]

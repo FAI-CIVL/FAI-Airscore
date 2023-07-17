@@ -560,6 +560,14 @@ class Task(object):
     def max_score(self):
         return max((p.score for p in self.valid_results if p.score is not None), default=None)
 
+    @property
+    def has_sss(self) -> bool:
+        return any(tp.type == 'speed' for tp in self.turnpoints)
+
+    @property
+    def has_ess(self) -> bool:
+        return any(tp.type == 'endspeed' for tp in self.turnpoints)
+
     @classmethod
     def read(cls, task_id: int):
         """Reads Task from database
@@ -1465,16 +1473,14 @@ class Task(object):
         self.opt_dist_to_ESS = sum(self.optimised_legs[0:ess_wpt])
         # work out self.opt_dist_to_SS, self.opt_dist_to_ESS, self.SS_distance
         # 2022: SS_distance has to be calculated as min(launch to ESS)
-        if any(tp.type == 'endspeed' for tp in self.turnpoints):
+        # 2023: SS_distance calculation is dependent by GAP flavour
+        if not self.has_ess or not hasattr(self.formula, 'ss_dist_calc') or self.formula.ss_dist_calc in (None, 'launch_to_goal'):
+            self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
+        else:
             optimised = get_shortest_path(self, ss_distance=True)
             optimised_legs = [0] + [distance(e, optimised[i+1], method) for i, e in enumerate(optimised[:-1])]
-            # self.opt_dist_to_SS = sum(optimised_legs[0:sss_wpt])
-            # self.opt_dist_to_ESS = sum(optimised_legs[0:ess_wpt])  # this is used for Stopped Task Validity
             self.SS_distance = sum(optimised_legs[sss_wpt:ess_wpt])
-        else:
-            # self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
-            # self.opt_dist_to_ESS = sum(self.optimised_legs[0:ess_wpt])
-            self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
+
 
     def clear_waypoints(self):
         from db.tables import TblTaskWaypoint as W

@@ -69,6 +69,7 @@ class FormulaPreset:
     lead_factor: Preset
     # lead_squared_distance: Preset
     formula_time: Preset
+    ss_dist_calc: Preset
     arr_alt_bonus: Preset
     arr_min_height: Preset
     arr_max_height: Preset
