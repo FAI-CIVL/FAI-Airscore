@@ -198,6 +198,13 @@ function populate_task(json){
                 }
                 count++;
             });
+            // adding SS_distance info as it changes based on scoring system (2023)
+            $.each( json.info, function( key, value ) {
+                if ( key == 'SS_distance' )
+                {
+                    $('#taskinfo tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
+                }
+            });
             $.each( json.stats, function( key, value ) {
                 $('#taskinfo tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
             });
