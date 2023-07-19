@@ -20,6 +20,7 @@ from task import Task
 class Track(Flight):
 
     def __init__(self, *args, **kwargs):
+        self.start_time = kwargs.pop('start_time', None)
         super().__init__(*args, **kwargs)
 
     def _check_altitudes(self):
@@ -123,6 +124,45 @@ class Track(Flight):
         self.press_alt_valid = press_alt_ok
         self.gnss_alt_valid = gnss_alt_ok
 
+    def _compute_takeoff_landing(self):
+        """Finds the takeoff and landing fixes in the log.
+
+        Takeoff fix is the first fix in the flying mode. Landing fix
+        is the next fix after the last fix in the flying mode or the
+        last fix in the file.
+        """
+        takeoff_fix = None
+        landing_fix = None
+        was_flying = False
+        for fix in self.fixes:
+            if fix.flying and takeoff_fix is None:
+                takeoff_fix = fix
+            elif fix.flying and landing_fix and self.start_time:
+                # pilot restarts within start window
+                takeoff_fix = fix
+                landing_fix = None
+            if not fix.flying and was_flying:
+                landing_fix = fix
+                if self.start_time and fix.rawtime < self.start_time:
+                    # continue checking if pilot restarts within start window
+                    pass
+                elif self._config.which_flight_to_pick == "first":
+                    # User requested to select just the first flight in the log,
+                    # terminate now.
+                    break
+            was_flying = fix.flying
+
+        if takeoff_fix is None:
+            # No takeoff found.
+            return
+
+        if landing_fix is None:
+            # Landing on the last fix
+            landing_fix = self.fixes[-1]
+
+        self.takeoff_fix = takeoff_fix
+        self.landing_fix = landing_fix
+
     @staticmethod
     def create_from_file(filename: Path, config: FlightParsingConfig = FlightParsingConfig()):
         """Creates an instance of Flight from a given file.
@@ -135,34 +175,9 @@ class Track(Flight):
             An instance of Flight built from the supplied IGC file.
         """
 
-        fixes = []
-        a_records = []
-        i_records = []
-        h_records = []
         abs_filename = Path(filename).expanduser().absolute()
         with abs_filename.open('r', encoding="ISO-8859-1") as flight_file:
-            for line in flight_file:
-                line = line.replace('\n', '').replace('\r', '')
-                if not line:
-                    continue
-                if line[0] == 'A':
-                    a_records.append(line)
-                elif line[0] == 'B':
-                    fix = GNSSFix.build_from_B_record(line, index=len(fixes))
-                    if fix is not None:
-                        if fixes and math.fabs(fix.rawtime - fixes[-1].rawtime) < 1e-5:
-                            # The time did not change since the previous fix.
-                            # Ignore this fix.
-                            pass
-                        else:
-                            fixes.append(fix)
-                elif line[0] == 'I':
-                    i_records.append(line)
-                elif line[0] == 'H':
-                    h_records.append(line)
-                else:
-                    # Do not parse any other types of IGC records
-                    pass
+            fixes, a_records, i_records, h_records = parse_igc_file(flight_file)
         return Track(fixes, a_records, h_records, i_records, config)
 
     @staticmethod
@@ -184,42 +199,58 @@ class Track(Flight):
             An instance of Track(igc_lib Flight) built from the supplied IGC file.
         """
 
-        fixes = []
-        a_records = []
-        i_records = []
-        h_records = []
         abs_filename = Path(filename).expanduser().absolute()
         with abs_filename.open('r', encoding="ISO-8859-1") as flight_file:
-            for line in flight_file:
-                line = line.replace('\n', '').replace('\r', '')
-                if not line:
-                    continue
-                if line[0] == 'A':
-                    a_records.append(line)
-                elif line[0] == 'B':
-                    fix = GNSSFix.build_from_B_record(line, index=len(fixes))
-                    if fix is not None:
-                        if fixes and math.fabs(fix.rawtime - fixes[-1].rawtime) < 1e-5:
-                            # The time did not change since the previous fix.
-                            # Ignore this fix.
-                            pass
-                        elif task and not (task.window_open_time - 1 <= fix.rawtime <= task.task_deadline + 1):
-                            # We are out of task time.
-                            # Ignore this fix.
-                            pass
-                        else:
-                            fixes.append(fix)
-                elif line[0] == 'I':
-                    i_records.append(line)
-                elif line[0] == 'H':
-                    h_records.append(line)
-                else:
-                    # Do not parse any other types of IGC records
-                    pass
+            fixes, a_records, i_records, h_records = parse_igc_file(flight_file, task)
         try:
-            return Track(fixes, a_records, h_records, i_records, config)
+            return Track(fixes, a_records, h_records, i_records, config, start_time=task.window_close_time or task.start_time)
         except (IndexError, AttributeError) as e:
             print(f"Error creating Track from {filename.name}: {e}")
             return None
         # return flight
 
+
+def parse_igc_file(lines: list, task: (Task or None) = None) -> tuple:
+    fixes = []
+    a_records = []
+    i_records = []
+    h_records = []
+    for line in lines:
+        line = line.replace('\n', '').replace('\r', '')
+        if not line:
+            continue
+        if line[0] == 'A':
+            # Manufacturer and unique ID for FR
+            a_records.append(line)
+        elif line[0] == 'H':
+            # Header record
+            h_records.append(line)
+        elif line[0] == 'I':
+            # FXA extension (mandatory)
+            i_records.append(line)
+        elif line[0] == 'E' and line[-3:] == 'PEV':
+            # trying to catch pilot-initiated events (PEV code) that seem to indicate 
+            # detected launch in some GPS instruments
+            # this should avoid to consider aborted launch and other events as first flight
+            # NOTE: disabled for now, seems not necessary with relaunch detecting code
+            # print(f"found a PEV event: {line}")
+            # fixes.clear()
+            continue
+        elif line[0] == 'B':
+            fix = GNSSFix.build_from_B_record(line, index=len(fixes))
+            if fix is not None:
+                if fixes and math.fabs(fix.rawtime - fixes[-1].rawtime) < 1e-5:
+                    # The time did not change since the previous fix.
+                    # Ignore this fix.
+                    pass
+                elif task and not (task.window_open_time - 1 <= fix.rawtime <= task.task_deadline + 1):
+                    # We are out of task time.
+                    # Ignore this fix.
+                    pass
+                else:
+                    fixes.append(fix)
+        else:
+            # Do not parse any other types of IGC records
+            pass
+
+    return fixes, a_records, i_records, h_records
