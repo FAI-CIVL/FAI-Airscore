@@ -49,7 +49,8 @@ class LeadCoeff(object):
 def lead_coeff_function(lc: LeadCoeff, result, fix, next_fix):
     """Lead Coefficient formula
     Default fallback
-    This is the default function if not present in Formula library"""
+    This is the default function if not present in Formula library
+    (should not be necessary any custom function in libraries)"""
     if lc.formula == 'integrated':
         return lclib.weightedarea.lc_calculation_integrate(lc, result, fix, next_fix)
     elif lc.formula == 'weighted':
@@ -58,10 +59,15 @@ def lead_coeff_function(lc: LeadCoeff, result, fix, next_fix):
 
 
 def tot_lc_calc(res, t):
-    """Lead Coefficient formula from GAP2016
+    """Lead Coefficient formula
     Default fallback
-    This is the default function if not present in Formula library"""
+    This is the default function if not present in Formula library
+    (should not be necessary any custom function in libraries)"""
     if t.formula.lc_formula == 'integrated':
+        if not hasattr(t.formula, 'matrix') or not t.formula.matrix:
+            # creating matrix
+            t.formula.matrix = lclib.weightedarea.weight_matrix()
+            t.formula.slice_dist = t.SS_distance / 1000 / len(t.formula.matrix)
         return lclib.weightedarea.tot_lc_calculation_integrate(res, t)
     elif t.formula.lc_formula == 'weighted':
         return lclib.weightedarea.tot_lc_calculation(res, t)

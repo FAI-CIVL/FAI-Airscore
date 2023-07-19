@@ -38,7 +38,6 @@ def lc_calculation(lc, result, fix, next_fix) -> float:
     """
 
     progress = lc.best_dist_to_ess[0] - lc.best_dist_to_ess[1]
-    # print(f'weight: {weight}, progress: {progress}, time: {time}')
     if progress <= 0:
         return 0
 
@@ -51,7 +50,6 @@ def tot_lc_calculation(res, t) -> float:
     """Function to calculate final Leading Coefficient for pilots,
     that needs to be done when all tracks have been scored"""
 
-    # print(f'Weighted Area Tot LC Calculation')
     if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
@@ -89,6 +87,7 @@ def weight_calc(p: float) -> float:
     return weightRising(p) * weightFalling(p)
 
 
+# Integrated calculation
 def lc_calculation_integrate(lc, result, fix, next_fix) -> float:
     """ Lead Coefficient formula from PWC2023
         A1.1.1 Leading coefficient (LC)
@@ -115,39 +114,31 @@ def lc_calculation_integrate(lc, result, fix, next_fix) -> float:
         return 0
 
     ratio = c_round(toDo(lc.best_dist_to_ess[1], lc.ss_distance), integrate_precision)
-    # slices = ratio * 10**integrate_precision
     index = int(ratio * lc.slices)
     if lc.latest_index and index >= lc.latest_index:
         return 0
 
     time = next_fix.rawtime - lc.best_start_time
-    # print(f"time: {time} | dist to ESS: {lc.best_dist_to_ess[1]} | ratio: {ratio} | slice id: {index}")
     result = sum(weight * lc.slice_dist * time for weight in weight_calc_integrate(lc.matrix, lc.latest_index, index))
     lc.latest_index = index
     return result
 
 
 def missing_area_integrate(matrix: list, id0: int, idx: int) -> list:
-    # print(f"id {id0} ratio: {matrix[id0].ratio}")
-    # print(f"id {idx} ratio: {matrix[idx].ratio}")
     result = [matrix[i].falling for i in range(id0, idx, -1)]
-    # print(f"result elements: {len(result)}")
     return result
 
 
 def weight_calc_integrate(matrix: list, id0: int, idx: int) -> list:
-    # print(f"id {id0} ratio: {matrix[id0].ratio}")
-    # print(f"id {idx} ratio: {matrix[idx].ratio}")
     result = [matrix[i].rising * matrix[i].falling for i in range(id0, idx, -1)]
-    # print(f"result elements: {len(result)}")
     return result
 
 
 def tot_lc_calculation_integrate(res, t) -> float:
     """Function to calculate final Leading Coefficient for pilots,
-    that needs to be done when all tracks have been scored"""
+    that needs to be done when all tracks have been scored
+    This version integrates weight value on fixed slices """
 
-    # print(f'Weighted Area Tot LC Calculation')
     if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
@@ -158,12 +149,12 @@ def tot_lc_calculation_integrate(res, t) -> float:
         '''pilot did not make ESS'''
         best_dist_to_ess = max(0, res.best_dist_to_ESS / 1000)  # in Km
         if best_dist_to_ess > 0:
-            matrix = weight_matrix()
+            # matrix = weight_matrix()
             ratio = c_round(toDo(best_dist_to_ess, ss_distance), integrate_precision)
-            slice_dist = ss_distance / len(matrix)
-            index = int(ratio * len(matrix))
+            # slice_dist = ss_distance / len(matrix)
+            index = int(ratio * len(t.formula.matrix))
             missing_time = t.max_time - t.start_time
-            landed_out = sum(weight * slice_dist * missing_time for weight in missing_area_integrate(matrix, index, 0))
+            landed_out = sum(weight * t.formula.slice_dist * missing_time for weight in missing_area_integrate(t.formula.matrix, index, 0))
     return (res.fixed_LC + landed_out) / (1800 * ss_distance)
 
 
