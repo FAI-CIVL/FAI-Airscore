@@ -256,7 +256,7 @@ class CompForm(FlaskForm):
     formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
 
     scoring_altitude = SelectField('Scoring Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
-    lead_factor = DecimalField('Leadfactor', places=1, default=1, description=help_lead_factor)
+    lead_factor = DecimalField('Leadfactor', places=2, default=1, description=help_lead_factor)
     no_goal_penalty = IntegerField('No goal penalty (%)', validators=[NumberRange(min=0, max=100)], default=100)
 
     tolerance = DecimalField('Turnpoint radius tolerance %', places=1, default=0.1)

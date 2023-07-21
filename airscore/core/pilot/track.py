@@ -130,6 +130,9 @@ class Track(Flight):
         Takeoff fix is the first fix in the flying mode. Landing fix
         is the next fix after the last fix in the flying mode or the
         last fix in the file.
+
+        This custom version looks for relaunches if a landing is 
+        detected during task window
         """
         takeoff_fix = None
         landing_fix = None
