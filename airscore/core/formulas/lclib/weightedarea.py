@@ -152,7 +152,7 @@ def tot_lc_calculation_integrate(res, t) -> float:
             # matrix = weight_matrix()
             ratio = c_round(toDo(best_dist_to_ess, ss_distance), integrate_precision)
             # slice_dist = ss_distance / len(matrix)
-            index = int(ratio * len(t.formula.matrix))
+            index = min(len(t.formula.matrix) - 1, int(ratio * len(t.formula.matrix)))  # avoid out of range if pilot bombed out at Start
             missing_time = t.max_time - t.start_time
             landed_out = sum(weight * t.formula.slice_dist * missing_time for weight in missing_area_integrate(t.formula.matrix, index, 0))
     return (res.fixed_LC + landed_out) / (1800 * ss_distance)
