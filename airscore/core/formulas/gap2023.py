@@ -40,7 +40,7 @@ pg_preset = FormulaPreset(
     # Lead Factor: factor for Leadout Points calculation formula [0 - 0.5, default 0.26]
     lead_factor=Preset(value=0.26, visible=True, editable=True),
     # Lead Coeff formula: classic, weighted, integrated
-    lc_formula=Preset(value='integrated', visible=False),
+    lc_formula=Preset(value='weighted', visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=False),
     # SS distance calculation: launch_to_goal, launch_to_ess, sss_to_ess
