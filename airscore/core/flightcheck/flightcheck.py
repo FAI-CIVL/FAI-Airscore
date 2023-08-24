@@ -285,6 +285,7 @@ def check_fixes(
             if fix_dist_flown > result.distance_flown:
                 '''time of trackpoint with shortest distance to ESS'''
                 result.best_distance_time = next_fix.rawtime
+                result.best_distance_fix = next_fix
                 '''updating best distance flown'''
                 result.distance_flown = fix_dist_flown
 

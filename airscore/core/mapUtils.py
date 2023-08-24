@@ -229,6 +229,7 @@ def result_to_geojson(result, task, flight, second_interval=5):
     takeoff_landing = []
     thermals = []
     infringements = []
+    fixes_to_keep = []
     point = namedtuple('fix', 'lat lon')
 
     min_lat = flight.fixes[0].lat
@@ -238,9 +239,19 @@ def result_to_geojson(result, task, flight, second_interval=5):
     bbox = [[min_lat, min_lon], [max_lat, max_lon]]
 
     takeoff = Point((flight.takeoff_fix.lon, flight.takeoff_fix.lat))
-    takeoff_landing.append(Feature(geometry=takeoff, properties={"TakeOff": "TakeOff"}))
+    time = "%02d:%02d:%02d" % rawtime_float_to_hms(flight.takeoff_fix.rawtime + task.time_offset)
+    takeoff_landing.append(Feature(geometry=takeoff, properties={"event": "TakeOff", "time": time}))
     landing = Point((flight.landing_fix.lon, flight.landing_fix.lat))
-    takeoff_landing.append(Feature(geometry=landing, properties={"Landing": "Landing"}))
+    time = "%02d:%02d:%02d" % rawtime_float_to_hms(flight.landing_fix.rawtime + task.time_offset)
+    takeoff_landing.append(Feature(geometry=landing, properties={"event": "Landing", "time": time}))
+
+    fixes_to_keep.extend([flight.takeoff_fix.rawtime, flight.landing_fix.rawtime])
+    # adding best distance fix if not in goal
+    if not result.goal_time and result.best_distance_fix:
+        best_distance = Point((result.best_distance_fix.lon, result.best_distance_fix.lat))
+        time = "%02d:%02d:%02d" % rawtime_float_to_hms(result.best_distance_fix.rawtime + task.time_offset)
+        takeoff_landing.append(Feature(geometry=best_distance, properties={"event": "BestDistance", "time": time}))
+        fixes_to_keep.append(result.best_distance_fix.rawtime)
 
     for thermal in flight.thermals:
         thermals.append(
@@ -273,6 +284,7 @@ def result_to_geojson(result, task, flight, second_interval=5):
                 time,
                 f'<b>{tp.name}</b> <br>' f'alt: <b>{tp.altitude:.0f} m.</b><br>' f'time: <b>{time}</b>',
             ]
+            fixes_to_keep.append(tp.rawtime)
             if idx > 0:
                 current = point(lon=tp.lon, lat=tp.lat)
                 previous = point(lon=waypoints_achieved[-1][0], lat=waypoints_achieved[-1][1])
@@ -290,14 +302,31 @@ def result_to_geojson(result, task, flight, second_interval=5):
                 achieved.extend([0, "0:00:00", '-'])
             waypoints_achieved.append(achieved)
 
+    '''airspace infringements'''
+    if result.infringements:
+        for entry in result.infringements:
+            time = "%02d:%02d:%02d" % rawtime_float_to_hms(entry['rawtime'] + task.time_offset)
+            infringements.append(
+                [
+                    entry['lon'],
+                    entry['lat'],
+                    int(entry['alt']),
+                    entry['space'],
+                    int(entry['distance']),
+                    entry['separation'],
+                    int(entry['rawtime']),
+                    time,
+                ]
+            )
+            fixes_to_keep.append(int(entry['rawtime']))
+
     lastfix = flight.fixes[0]
     for fix in flight.fixes:
         bbox = checkbbox(fix.lat, fix.lon, bbox)
         keep = False
         if (
             fix.rawtime >= lastfix.rawtime + second_interval
-            or any(tp for tp in result.waypoints_achieved if tp.rawtime == fix.rawtime)
-            or any(tp for tp in result.infringements if int(tp['rawtime']) == fix.rawtime)
+            or fix.rawtime in fixes_to_keep
         ):
             '''keep fixes that validate a turnpoint or cause an infringement'''
             ###
@@ -327,23 +356,6 @@ def result_to_geojson(result, task, flight, second_interval=5):
     features.append(Feature(geometry=route_multilinestring, properties={"Track": "Post_Goal"}))
 
     tracklog = FeatureCollection(features)
-
-    '''airspace infringements'''
-    if result.infringements:
-        for entry in result.infringements:
-            time = "%02d:%02d:%02d" % rawtime_float_to_hms(entry['rawtime'] + task.time_offset)
-            infringements.append(
-                [
-                    entry['lon'],
-                    entry['lat'],
-                    int(entry['alt']),
-                    entry['space'],
-                    int(entry['distance']),
-                    entry['separation'],
-                    int(entry['rawtime']),
-                    time,
-                ]
-            )
 
     return tracklog, thermals, takeoff_landing, bbox, waypoints_achieved, infringements
 

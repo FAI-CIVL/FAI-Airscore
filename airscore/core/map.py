@@ -107,9 +107,19 @@ def make_map(
                 waypoints = layer_geojson['geojson']['waypoint_achieved']
                 waypoint_group = FeatureGroup(name='Waypoints Taken', show=show_waypoint)
                 for w in waypoints:
-                    waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[6], max_width=300)))
-
+                    waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[6], max_width='300')))
+                if layer_geojson['geojson']['takeoff_landing']:
+                    for w in layer_geojson['geojson']['takeoff_landing']:
+                        # label = w['properties'].get('label')
+                        event = w['properties']['event']
+                        color = "green" if event == "TakeOff" else "darkred" if event == "Landing" else "orange"
+                        icon = folium.Icon(color=color, icon="times", prefix='fa')
+                        coords = w['geometry']['coordinates']
+                        label = f"{event} at {w['properties'].get('time')}"
+                        coords.reverse()  # changing to [lat, lon]
+                        waypoint_group.add_child(Marker(coords, icon=icon, popup=Popup(label, max_width='300')))
                 folium_map.add_child(waypoint_group)
+ 
     """Design cylinders"""
     if circles:
         for c in circles:
@@ -131,7 +141,7 @@ def make_map(
                 text = f"<b>{c['name']}</b><br>{str(c['description'])}<br>Altitude: {str(c['altitude'])} m."
             else:
                 text = f"<b>{c['name']}</b>"
-            popup = folium.Popup(text, max_width=300)
+            popup = folium.Popup(text, max_width='300')
 
             folium.Circle(
                 location=(c['latitude'], c['longitude']),
@@ -242,7 +252,7 @@ def make_map(
         if infringements:
             for i in infringements:
                 popup = folium.Popup(
-                    f"<b>{i[3]}</b><br>{i[5]}. separation: {i[4]} m. <br>" f"{i[7]} - alt. {i[2]} m.", max_width=300
+                    f"<b>{i[3]}</b><br>{i[5]}. separation: {i[4]} m. <br>" f"{i[7]} - alt. {i[2]} m.", max_width='300'
                 )
                 icon = folium.Icon(color="red", icon="times", prefix='fa')
                 airspace_group.add_child(Marker([i[1], i[0]], icon=icon, popup=popup))
