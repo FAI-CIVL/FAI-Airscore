@@ -247,7 +247,7 @@ def result_to_geojson(result, task, flight, second_interval=5):
 
     fixes_to_keep.extend([flight.takeoff_fix.rawtime, flight.landing_fix.rawtime])
     # adding best distance fix if not in goal
-    if not result.goal_time and result.best_distance_fix:
+    if not result.goal_time and hasattr(result, 'best_distance_fix') and result.best_distance_fix:
         best_distance = Point((result.best_distance_fix.lon, result.best_distance_fix.lat))
         time = "%02d:%02d:%02d" % rawtime_float_to_hms(result.best_distance_fix.rawtime + task.time_offset)
         takeoff_landing.append(Feature(geometry=best_distance, properties={"event": "BestDistance", "time": time}))
