@@ -827,6 +827,7 @@ class TblTaskResult(BaseModel):
                     p.name,
                     p.nat,
                     p.sex,
+                    p.birthdate,
                     p.glider,
                     p.glider_cert,
                     p.sponsor,
