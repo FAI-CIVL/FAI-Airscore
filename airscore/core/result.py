@@ -1247,7 +1247,7 @@ def get_task_team_scoring(filename):
     pilots = []
     teams = []
     all_scores = []
-    if not formula['country_scoring']:
+    if not formula['team_scoring']:
         print(f'Team Scoring is not available')
         return None
     pilots_list = [p for p in data['results'] if not p['team'] in [None, '']]
@@ -1276,7 +1276,7 @@ def get_task_team_scoring(filename):
         all_scores.append(t['score'])
     for row in pilots:
         row['group'] = str(sum(map(lambda x: x > row['team_score'], all_scores)) + 1) + row['group']
-    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula'], 'stats': data['stats']}
 
 
 def get_comp_team_scoring(filename):
@@ -1286,7 +1286,7 @@ def get_comp_team_scoring(filename):
     """
     data = open_json_file(filename)
     formula = data['formula']
-    if not formula['country_scoring']:
+    if not formula['team_scoring']:
         print(f'Team Scoring is not available')
         return None
     '''get info: teams list, team size, task codes'''
@@ -1337,4 +1337,4 @@ def get_comp_team_scoring(filename):
     for row in pilots:
         row['group'] = str(sum(map(lambda x: x > row['team_score'], all_scores)) + 1) + row['group']
 
-    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'tasks': data['tasks'], 'formula': data['formula'], 'stats': data['stats']}

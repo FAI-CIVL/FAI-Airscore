@@ -27,6 +27,9 @@
     {% if country_scores %}
     <a href="{{ url_for('public.country_overall', compid=comp.comp_id) }}" class='btn btn-primary ml-3'>Nations</a>
     {% endif %}
+    {% if team_scores %}
+    <a href="{{ url_for('public.team_overall', compid=comp.comp_id) }}" class='btn btn-primary ml-3'>Teams</a>
+    {% endif %}
   </div>
   {% endif %}
   <div>
@@ -99,6 +102,10 @@
         <a href="{{ url_for('public.task_result', taskid=task.id) }}" class='btn btn-primary'>Task Scores</a>
         {%  if country_scores %}
         <a href="{{ url_for('public.country_task', taskid=task.id) }}" class='btn btn-primary'>Nations</a>
+        </p>
+        {%  endif %}
+        {%  if team_scores %}
+        <a href="{{ url_for('public.team_task', taskid=task.id) }}" class='btn btn-primary'>Teams</a>
         </p>
         {%  endif %}
         {% endif %}
