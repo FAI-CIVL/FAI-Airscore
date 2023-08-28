@@ -13,7 +13,7 @@ function populate_task(json){
     columns.push({data: 'name', title: 'Name'});
     columns.push({data: 'nat', title: 'NAT', name:'NAT', defaultContent: ''});
     columns.push({data: 'sex', title: 'Sex', defaultContent: '', visible: false});
-    columns.push({data: 'glider', title:' Glider', defaultContent: ''});
+    columns.push({data: 'glider', title:' Equip', defaultContent: ''});
     columns.push({data: 'glider_cert', title: 'Class', defaultContent: '', visible: false});
     columns.push({data: 'sponsor', title:' Sponsor', defaultContent: ''});
     //hide SS ES for Race

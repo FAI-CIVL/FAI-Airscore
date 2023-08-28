@@ -15,7 +15,7 @@ function populate_pilots(compid){
              { data: 'name', title: "Pilot"},
              { data: 'sex', title: "Sex"},
              { data: 'nat', title: "Nat"},
-             { data: 'glider', title: "Glider"},
+             { data: 'glider', title: "Equip"},
              { data: 'glider_cert', title: "Certification"},
              { data: 'sponsor', title: "Sponsor"},
              { data: 'status', title: "Status"}
