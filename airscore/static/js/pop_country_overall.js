@@ -1,99 +1,77 @@
-function populate_country_overall(comPk){
-$(document).ready(function() {
-    $('#task_result').dataTable({
-        ajax: '/_get_comp_country_result/'+comPk,
-        paging: false,
-        searching: true,
-        saveState: true,
-        info: false,
-        "dom": 'lrtip',
-        columns: [
-            {data: 'group', title:'group'},
-            {data: 'score', title:'Total'},
-            {data: 'nation_score', title:'Nation Total'},
-            {data: 'fai_id', title:'FAI'},
-            {data: 'civl_id', title:'CIVL'},
-            {data: 'glider', title:'Glider'},
-            {data: 'glider_cert', title:'EN'},
-            {data: 'name', title:'Name'},
-            {data: 'nat', title:'NAT'},
-            {data: 'sex', title:'Sex'},
-            {data: 'sponsor', title:'Sponsor'},
-            {data: 'results.T1.score', title:'T1'},
-            {data: 'results.T2.score', title: 'T2'},
-            {data: 'results.T3.score', title: 'T3'},
-            {data: 'results.T4.score', title: 'T4'},
-            {data: 'results.T5.score', title: 'T5'},
-            {data: 'results.T6.score', title: 'T6'},
-            {data: 'results.T7.score', title: 'T7'},
-            {data: 'results.T8.score', title: 'T8'},
-            {data: 'results.T9.score', title: 'T9'},
-            {data: 'results.T10.score', title: 'T10'},
-            {data: 'results.T11.score', title: 'T11'},
-            {data: 'results.T12.score', title: 'T12'},
-            {data: 'results.T13.score', title: 'T13'},
-            {data: 'results.T14.score', title: 'T14'},
-            {data: 'results.T15.score', title: 'T15'},
-            {data: 'results.T16.score', title: 'T16'},
-            {data: 'results.T17.score', title: 'T17'},
-            {data: 'results.T18.score', title: 'T18'},
-            {data: 'results.T19.score', title: 'T19'},
-            {data: 'results.T20.score', title: 'T20'}
-],
+function populate_country_overall(compid){
+    $('#comp_name').text('Loading Results ...');
 
-    orderFixed: [[2, 'desc'],[1, 'desc']],
-
-    rowGroup: {
-        dataSrc: ['group']
-//        startRender: function (rows, group) {     return (group )}
-
-    },
-        "columnDefs": [
-            {
-                "targets": [ 0, 1, 2, 3, 4, 5, 6,],
-                "visible": false
-            },
-        ],
-        "initComplete": function(settings, json)
-        {
-            var table= $('#task_result');
-            var rows = $("tr", table).length-1;
-            var numCols = $("th", table).length+6;
-
-            // comp info
-            $('#comp_name').text(json.info.comp_name + "  - Nations");
-            $('#comp_date').text(json.info.date_from + ' - ' + json.info.date_to);
-
-            // some GAP parameters
-            $('#formula tbody').append(
-                        "<tr><td>Director</td><td>" + json.info.MD_name + '</td></tr>' +
-                        "<tr><td>Location</td><td>" + json.info.comp_site + '</td></tr>' +
-                        "<tr><td>Formula</td><td>" + json.formula.formula + '</td></tr>' +
-                        "<tr><td>Overall Scoring</td><td>" + json.formula.overall_validity + ' (' + json.formula.validity_param*100 + ')</td></tr>');
-            if (json.formula.overall_validity == 'ftv')
-            {
-                $('#formula tbody').append(
-                        "<tr><td>Total Validity</td><td>" + json.stats.tot_validity + '</td></tr>');
-            }
-
-            // remove empty cols
-            for ( var i=1; i<=numCols; i++ )
-            {
-                var empty = true;
-                table.DataTable().column(i).data().each( function (e, i) {
-                    if (e != "")
-                    {
-                        empty = false;
-                        return false;
-                    }
-                } );
-
-                if (empty) {
-                    table.DataTable().column( i ).visible( false );
+    $.ajax({
+        type: "GET",
+        url: '/_get_comp_country_result/'+compid,
+        contentType:"application/json",
+        dataType: "json",
+        success: function (json) {
+            var compid = json.info.id;
+            var taskNum = json.stats.valid_tasks
+            console.log('taskNum='+taskNum);
+            var columns = [];
+            var idx = 0;
+            // rankings
+            // console.log(json.rankings);
+            // json.rankings.forEach( function(item, index) {
+            //     columns.push({data: 'rankings.'+item.rank_id.toString(), title: '#', name: item.rank_id.toString(), className: "text-right", defaultContent: '', visible: false});
+            // });
+            columns.push({data: 'group', title:'Group', className: "text-right", defaultContent: '', visible: false});
+            columns.push({data: 'score', title:'Total', className: "text-right", defaultContent: '', visible: false});
+            columns.push({data: 'nation_score', title:'Nation Total', className: "text-right", defaultContent: '', visible: false});
+            columns.push({data: 'fai_id', title:'FAI', className: "text-right", defaultContent: '', visible: false});
+            columns.push({data: 'civl_id', title:'CIVL', className: "text-right", defaultContent: '', visible: false});
+            columns.push({data: 'name', title:'Name', render: function ( data, type, row ) { let span = '<span>'; if (row.sex == 'F'){span='<span class="sex-F">'}; return span + data + '</span>'}});
+            columns.push({data: 'glider', title:'Equip'});
+            columns.push({data: 'glider_cert', title:'EN', defaultContent: '', visible: false});
+            columns.push({data: 'nat', title:'NAT', defaultContent: '', visible: false});
+            columns.push({data: 'sex', title:'Sex', defaultContent: '', visible: false});
+            columns.push({data: 'sponsor', title:'Sponsor'});
+            json.tasks.forEach( function(item, index) {
+                let code = item.task_code
+                console.log( item.task_code.toString() + ': ' + item.training.toString());
+                if ( !item.training ) {
+                  columns.push({data: 'results.'+code+'.score', title: code, className: "text-right", defaultContent: ''});
                 }
-            }
+            });
+            $('#results_table').dataTable({
+                data: json.data,
+                paging: false,
+                searching: true,
+                saveState: true,
+                info: false,
+                dom: 'lrtip',
+                columns: columns,
+                orderFixed: [[3, 'desc'],[2, 'desc']],
+                rowGroup: {dataSrc: 'group'},
+                initComplete: function(settings) {
+                    var table= $('#results_table');
+                    var rows = $("tr", table).length-1;
+                    var numCols = table.DataTable().columns().nodes().length;
 
+                    // comp info
+                    console.log(json.info);
+                    $('#comp_name').text(json.info.comp_name + "  - Nations");
+                    $('#comp_date').text(json.info.date_from + ' - ' + json.info.date_to);
+
+                    // some GAP parameters
+                    $('#formula tbody').append(
+                        "<tr><td>Director</td><td>" + json.info.MD_name + "</td></tr>" +
+                        "<tr><td>Location</td><td>" + json.info.comp_site + "</td></tr>" +
+                        "<tr><td>Formula</td><td>" + json.formula.country_size + " scoring, max " +  json.formula.max_country_size + " pilots</td></tr>"
+                    );
+
+                    $("#dhv option").remove(); // Remove all <option> child tags.
+                    // $.each(json.rankings, function(index, item) {
+                    //     $("#dhv").append(
+                    //         $("<option></option>")
+                    //             .text(item.rank_name)
+                    //             .val(item.rank_id)
+                    //     );
+                    // });
+                }
+            });
         }
     });
-});
 }

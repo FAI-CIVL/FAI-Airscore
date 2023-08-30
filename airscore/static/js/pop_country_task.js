@@ -14,12 +14,11 @@ $(document).ready(function() {
             {data: 'civl_id', title:'CIVL'},
             {data: 'glider', title:'Glider'},
             {data: 'glider_cert', title:'EN'},
-            {data: 'name', title:'Name'},
+            {data: 'name', title:'Name', "render": function ( data, type, row ) { let span = '<span>'; if (row.sex == 'F'){span='<span class="sex-F">'}; return span + data + '</span>'}},
             {data: 'nat', title:'NAT'},
             {data: 'sex', title:'Sex'},
             {data: 'sponsor', title:'Sponsor'},
-            {data: 'score', title:'Total'}
-
+            {data: 'score', title:'Total', className: "text-right"}
 ],
 
     orderFixed: [[1, 'desc'],[10, 'desc']],
@@ -30,7 +29,7 @@ $(document).ready(function() {
     },
         "columnDefs": [
             {
-                "targets": [ 0, 1, 2, 3, 4, 5],
+                "targets": [0, 1, 2, 3, 4, 5],
                 "visible": false
             },
         ],
@@ -47,20 +46,19 @@ $(document).ready(function() {
 
             // some GAP parameters
             $('#formula tbody').append(
-                    "<tr><td>Director</td><td>" + json.info.MD_name + '</td></tr>' +
-                    "<tr><td>Location</td><td>" + json.info.comp_site + '</td></tr>' +
-                    "<tr><td>Formula</td><td>" + json.formula.formula_name + '</td></tr>' +
-                    "<tr><td>Overall Scoring</td><td>" + json.formula.overall_validity);
-            if (json.formula.overall_validity == 'ftv') {
-                $('#formula tbody').append(
-                    ' (' + json.formula.validity_param*100 + ')</td></tr>' +
-                    "<tr><td>Total Validity</td><td>" + json.stats.total_validity + '</td></tr>');
-            }
-            else {
-                    $('#formula tbody').append('</td></tr>');
-            }
+                "<tr><td>Director</td><td>" + json.info.MD_name + "</td></tr>" +
+                "<tr><td>Location</td><td>" + json.info.comp_site + "</td></tr>" +
+                "<tr><td>Formula</td><td>" + json.formula.country_size + " scoring, max " +  json.formula.max_country_size + " pilots</td></tr>"
+            );
 
-
+            $("#dhv option").remove(); // Remove all <option> child tags.
+            // $.each(json.rankings, function(index, item) {
+            //     $("#dhv").append(
+            //         $("<option></option>")
+            //             .text(item.rank_name)
+            //             .val(item.rank_id)
+            //     );
+            // });
         }
     });
 });
