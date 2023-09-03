@@ -20,7 +20,7 @@ from task import Task
 class Track(Flight):
 
     def __init__(self, *args, **kwargs):
-        self.start_time = kwargs.pop('start_time', None)
+        self.relaunch_limit_time = kwargs.pop('relaunch_limit_time', None)
         super().__init__(*args, **kwargs)
 
     def _check_altitudes(self):
@@ -134,19 +134,25 @@ class Track(Flight):
         This custom version looks for relaunches if a landing is 
         detected during task window
         """
+
+        from route import distance
+
         takeoff_fix = None
         landing_fix = None
         was_flying = False
         for fix in self.fixes:
             if fix.flying and takeoff_fix is None:
                 takeoff_fix = fix
-            elif fix.flying and landing_fix and self.start_time:
-                # pilot restarts within start window
-                takeoff_fix = fix
-                landing_fix = None
+            elif fix.flying and landing_fix and self.relaunch_limit_time:
+                # check if there is a relauch
+                max_distance = 400  # maximum distance between launches, meters
+                if fix.rawtime < self.relaunch_limit_time and distance(fix, takeoff_fix) < max_distance:
+                    # pilot restarts within time limit and inside a reasonable distance from the previous one
+                    takeoff_fix = fix
+                    landing_fix = None
             if not fix.flying and was_flying:
                 landing_fix = fix
-                if self.start_time and fix.rawtime < self.start_time:
+                if self.relaunch_limit_time and fix.rawtime < self.relaunch_limit_time:
                     # continue checking if pilot restarts within start window
                     pass
                 elif self._config.which_flight_to_pick == "first":
@@ -206,7 +212,7 @@ class Track(Flight):
         with abs_filename.open('r', encoding="ISO-8859-1") as flight_file:
             fixes, a_records, i_records, h_records = parse_igc_file(flight_file, task)
         try:
-            return Track(fixes, a_records, h_records, i_records, config, start_time=task.window_close_time or task.start_time)
+            return Track(fixes, a_records, h_records, i_records, config, relaunch_limit_time=task.window_close_time or task.start_time)
         except (IndexError, AttributeError) as e:
             print(f"Error creating Track from {filename.name}: {e}")
             return None
