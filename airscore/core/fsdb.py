@@ -29,7 +29,7 @@ from ranking import get_fsdb_custom_attributes
 class FSDB(object):
     """ A Class to deal with FSComp FSDB files  """
 
-    def __init__(self, comp=None, tasks=None, filename=None, custom_attributes=None):
+    def __init__(self, comp: "Comp | None" = None, tasks: "list[Task] | None" = None, filename: "str | None" = None, custom_attributes: "list | None" = None):
         self.filename = filename  # str:  filename
         self.comp = comp  # Comp obj.
         self.custom_attributes = custom_attributes  # list: CompAttribute obj. list
@@ -46,7 +46,7 @@ class FSDB(object):
         return self.comp.formula
 
     @classmethod
-    def read(cls, fp: Path, short_name: str = None, keep_task_path=False, from_CIVL=False):
+    def read(cls, fp: Path, short_name: "str | None" = None, keep_task_path: bool = False, from_CIVL: bool = False):
         """A XML reader to read FSDB files
         Unfortunately the fsdb format isn't published so much of this is simply an
         exercise in reverse engineering.
@@ -115,7 +115,7 @@ class FSDB(object):
         return cls(comp, tasks, fp, comp_attributes)
 
     @classmethod
-    def create(cls, comp_id, ref_id=None):
+    def create(cls, comp_id: int, ref_id: "int | None" = None):
         """creates a FSDB Object from an AirScore competition
         input:
             - comp_id       int: comp_id event ID"""
@@ -673,7 +673,7 @@ class FSDB(object):
 
         return self.filename, fsdb
 
-    def save_file(self, filename: str = None):
+    def save_file(self, filename: "str | None" = None):
         """write fsdb file to results folder, with default filename:
         comp_code_datetime.fsdb"""
         from Defines import RESULTDIR
@@ -696,7 +696,7 @@ class FSDB(object):
         self.comp.formula.to_db()
         create_overall_ranking(self.comp.comp_id)
 
-    def add_custom_attributes(self, comp_id: int = None):
+    def add_custom_attributes(self, comp_id: "int | None" = None):
         """
         Add comp to AirScore database
         """
@@ -705,7 +705,7 @@ class FSDB(object):
                 attr.comp_id = comp_id or self.comp.comp_id
                 attr.to_db()
 
-    def add_tasks(self, comp_id: int = None):
+    def add_tasks(self, comp_id: "int | None" = None):
         """
         Add comp tasks to AirScore database
         """
@@ -750,7 +750,7 @@ class FSDB(object):
 
         return True
 
-    def add_participants(self, comp_id: int = None):
+    def add_participants(self, comp_id: "int | None" = None):
         """
         Add participants to AirScore database
         """
@@ -814,7 +814,7 @@ class FSDB(object):
             return None
 
 
-def read_fsdb_file(file: Path) -> ET:
+def read_fsdb_file(file: Path) -> "ET | None":
     """read the fsdb file"""
     try:
         tree = ET.parse(file)
