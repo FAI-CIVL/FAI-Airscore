@@ -24,9 +24,12 @@ services:
       - "2992:2992"
     environment:
       PYTHONUNBUFFERED: ${PYTHONUNBUFFERED}
-      REDIS_URL: redis://${REDIS_CONTAINER}:6379
-      REDIS_CONTAINER: ${REDIS_CONTAINER}
       WEB_SERVER_CONTAINER: ${WEB_SERVER_CONTAINER}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_URL: redis://${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_SSL: ${REDIS_SSL:-0}
+      REDIS_SSL_CERT_REQS: ${REDIS_SSL_CERT_REQS}
       FLASK_CONTAINER: flask_dev
       FLASK_PORT: ${FLASK_PORT}
       FLASK_ENV: development
@@ -51,7 +54,7 @@ services:
 
   redis:
     image: redis
-    container_name: ${REDIS_CONTAINER}
+    container_name: ${REDIS_HOST:-redis}
 
 volumes:
   node-modules:

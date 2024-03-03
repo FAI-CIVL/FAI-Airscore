@@ -23,8 +23,11 @@ DEBUG_TB_ENABLED = DEBUG
 DEBUG_TB_INTERCEPT_REDIRECTS = False
 CACHE_TYPE = "redis"  # Can be "memcached", "redis", etc.
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+REDIS_HOST = env.str("REDIS_HOST", default='redis')
 REDIS_URL = env.str("REDIS_URL") or 'redis://'
-REDIS_CONTAINER = env.str("REDIS_CONTAINER")
+REDIS_PORT = env.int("REDIS_PORT", default=6379)
+REDIS_SSL = env.bool("REDIS_SSL", default=False)
+REDIS_SSL_CERT_REQS = env.str("REDIS_SSL_CERT_REQS") or None
 WEB_SERVER_CONTAINER = env.str("WEB_SERVER_CONTAINER")
 FLASK_CONTAINER = env.str("FLASK_CONTAINER")
 FLASK_PORT = env.str("FLASK_PORT")
