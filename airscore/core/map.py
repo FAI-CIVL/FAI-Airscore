@@ -52,14 +52,23 @@ def make_map(
     else:
         location = [45, 10]
 
+    attr = (
+        '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> '
+        '&copy; <a href="https://stamen.com/" target="_blank">Stamen Design</a> '
+        '&copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> '
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> '
+        'integrated by <a href="https://github.com/FAI-CIVL/FAI-Airscore" target="_blank">FAI-Airscore</a>'
+    )
+    tiles = "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png"
     folium_map = folium.Map(
         location=location,
         position='relative',
         zoom_start=13,
-        tiles="Stamen Terrain",
+        tiles=tiles,
         max_bounds=True,
         min_zoom=5,
         prefer_canvas=True,
+        attr=attr
     )
     #     folium.LayerControl().add_to(folium_map)
     '''Define map borders'''
