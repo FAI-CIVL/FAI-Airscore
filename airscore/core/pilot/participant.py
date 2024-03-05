@@ -169,6 +169,8 @@ class Participant(Pilot):
                     pilot.team = el.get('value')
                 elif el.get('name').lower() in ('fai_id', 'fai_licence'):
                     pilot.fai_id = el.get('value')
+                elif el.get('name').lower() in ('class'):
+                    pilot.glider_cert = el.get('value')
                 else:
                     pilot.attributes.append({'attr_value': el.get('name'), 'meta_value': el.get('value')})
 
