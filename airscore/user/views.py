@@ -841,7 +841,7 @@ def _get_admin_comps():
 def _delete_comp(compid: int):
     from comp import delete_comp
     owner, _, _ = frontendUtils.get_comp_scorekeepers(compid)
-    if current_user.id == owner['id']:
+    if current_user.is_admin or current_user.id == owner['id']:
         delete_comp(compid)
     else:
         flash(f"You are not the owner of this competition. You cannot delete it.", category='danger')
